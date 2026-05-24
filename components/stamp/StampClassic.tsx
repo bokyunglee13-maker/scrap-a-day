@@ -103,54 +103,52 @@ export function StampClassic({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo fills the entire stamp body (inset-0) so the painted-teeth
-          overlay actually bites INTO the photo. Earlier inset-[3%] put the
-          photo inside a paper-colored padding, where the same-colored
-          scallops blended invisibly. */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Square photo region: top 0-75% (a 1:1 square fills full width).
+          The blob is already cropped square via canvas, so object-cover
+          shows the user's exact selection with no clipping or transform. */}
+      <div className="absolute left-0 right-0 top-0 h-[75%] overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
-          className="absolute left-1/2 top-1/2 h-full w-full object-cover"
-          style={{
-            transform: `translate(calc(-50% + ${stamp.crop.x}px), calc(-50% + ${stamp.crop.y}px)) scale(${stamp.crop.zoom})`,
-          }}
+          className="h-full w-full object-cover"
           draggable={false}
         />
+        {/* Inner ink border — frames the photo */}
+        <div className="pointer-events-none absolute inset-[4%] border-2 border-stamp-ink" />
       </div>
 
-      {/* Inner ink border (2px) — decorative frame inside the photo */}
-      <div className="pointer-events-none absolute inset-[6%] border-2 border-stamp-ink" />
-
-      {/* Wordmark + date — bottom right */}
-      {showDate && (
-        <div className="absolute bottom-[7%] right-[8%] flex flex-col items-end leading-none text-stamp-ink">
-          {!isSmall && (
-            <span className="font-serif text-[8px] tracking-[0.2em] opacity-70">
-              SCRAP·A·DAY
-            </span>
-          )}
-          <span
-            className={cn(
-              'font-serif font-medium',
-              size === 'sm' && 'text-[10px]',
-              size === 'md' && 'text-sm',
-              size === 'full' && 'text-xs',
-              size === 'lg' && 'text-2xl',
-              size === 'xl' && 'text-3xl',
+      {/* Bottom paper area: 25% — date + wordmark on bottom right */}
+      <div className="absolute bottom-0 left-0 right-0 h-[25%]">
+        {showDate && (
+          <div className="absolute bottom-[15%] right-[8%] flex flex-col items-end leading-none text-stamp-ink">
+            {!isSmall && (
+              <span className="font-serif text-[8px] tracking-[0.2em] opacity-70">
+                SCRAP·A·DAY
+              </span>
             )}
-          >
-            {dateText}
-          </span>
-        </div>
-      )}
+            <span
+              className={cn(
+                'font-serif font-medium',
+                size === 'sm' && 'text-[10px]',
+                size === 'md' && 'text-sm',
+                size === 'full' && 'text-xs',
+                size === 'lg' && 'text-2xl',
+                size === 'xl' && 'text-3xl',
+              )}
+            >
+              {dateText}
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Mood dot — TOP RIGHT for classic (bottom-right is taken by date) */}
+      {/* Mood dot — TOP RIGHT corner of photo. Smaller at compact sizes. */}
       {showMoodDot && (
         <div
           className={cn(
-            'absolute right-[8%] top-[8%] size-3 rounded-full ring-2 ring-white',
+            'absolute right-[8%] top-[6%] rounded-full ring-1 ring-white',
             moodBgClass(stamp.mood),
+            isSmall ? 'size-2' : 'size-3 ring-2',
           )}
           aria-label={`감정: ${stamp.mood}`}
         />

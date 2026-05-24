@@ -89,28 +89,24 @@ export function StampPolaroid({
         SIZE_CLASS[size],
       )}
     >
-      {/* Photo region — square, top/left/right 8% margin, larger bottom margin.
-          The 3:4 outer + square photo + 8% side margin → photo height = width - 16%
-          → bottom margin = 4/3 of (1 - 16%) subtracted from height. We position
-          the square with explicit insets so the bottom area is reserved for caption. */}
+      {/* Photo region — larger photo + smaller bottom (user request). The
+          blob is pre-cropped square via canvas; with this slightly-portrait
+          area (~0.86 aspect) object-cover trims minimal pixels off the
+          horizontal edges to fill, which feels like a 'real polaroid' where
+          the photo print is the dominant element. */}
       <div
         className="absolute overflow-hidden bg-stamp-paper"
         style={{
-          top: '8%',
-          left: '8%',
-          right: '8%',
-          // Square: height = container width * 0.84. As % of container height
-          // (4/3 × width), that's 0.84 / (4/3) = 0.63 → bottom is 100% - 8% - 63% = 29%.
-          bottom: '29%',
+          top: '4%',
+          left: '5%',
+          right: '5%',
+          bottom: '16%',
         }}
       >
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
-          className="absolute left-1/2 top-1/2 h-full w-full object-cover"
-          style={{
-            transform: `translate(calc(-50% + ${stamp.crop.x}px), calc(-50% + ${stamp.crop.y}px)) scale(${stamp.crop.zoom})`,
-          }}
+          className="h-full w-full object-cover"
           draggable={false}
         />
       </div>
@@ -148,12 +144,13 @@ export function StampPolaroid({
         </div>
       )}
 
-      {/* Mood dot — bottom right */}
+      {/* Mood dot — bottom right (over the caption area). Smaller at compact sizes. */}
       {showMoodDot && (
         <div
           className={cn(
-            'absolute bottom-[8%] right-[6%] size-3 rounded-full ring-2 ring-white',
+            'absolute bottom-[5%] right-[5%] rounded-full ring-1 ring-white',
             moodBgClass(stamp.mood),
+            size === 'lg' || size === 'xl' ? 'size-3 ring-2' : 'size-2',
           )}
           aria-label={`감정: ${stamp.mood}`}
         />

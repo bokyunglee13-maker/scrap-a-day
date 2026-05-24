@@ -41,6 +41,7 @@ import { MoodPicker } from '@/components/editor/MoodPicker';
 import { StylePicker } from '@/components/editor/StylePicker';
 import { StampPreview } from '@/components/editor/StampPreview';
 import { validatePhotoFile } from '@/lib/photoValidation';
+import { extractCroppedBlob } from '@/lib/imageProcessing';
 import { createStamp, type StampInput } from '@/lib/stamps';
 import { incrementFailed } from '@/lib/usage';
 import type { CropData, Mood, StampStyle } from '@/types';
@@ -194,6 +195,19 @@ function NewStampInner() {
     if (!photoFile) return;
     setSubmitting(true);
     try {
+      // Extract the cropped region into a new blob via canvas. Stamp
+      // components then display this blob directly with object-cover
+      // and the user's selection is preserved at every display size.
+      let croppedBlob: Blob;
+      try {
+        croppedBlob = await extractCroppedBlob(photoFile, crop.pixelArea);
+      } catch (e) {
+        // Most likely INVALID_CROP_AREA — onCropComplete never fired.
+        await incrementFailed(date);
+        toast.error('잠시 후 다시 시도해주세요');
+        return;
+      }
+
       const cropData: CropData = {
         x: crop.x,
         y: crop.y,
@@ -203,7 +217,7 @@ function NewStampInner() {
       };
       const input: StampInput = {
         date,
-        photoBlob: photoFile,
+        photoBlob: croppedBlob,
         crop: cropData,
         memo,
         mood,

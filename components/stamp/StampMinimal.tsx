@@ -92,52 +92,52 @@ export function StampMinimal({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo fills the stamp body (inset-0). Same reasoning as Classic:
-          the painted-teeth overlay needs photo pixels at the edges to
-          paint over, otherwise it blends into matching-color padding. */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Square photo region: top 0-75% (a 1:1 square fills full width).
+          Blob is pre-cropped square via canvas — object-cover is exact. */}
+      <div className="absolute left-0 right-0 top-0 h-[75%] overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
-          className="absolute left-1/2 top-1/2 h-full w-full object-cover"
-          style={{
-            transform: `translate(calc(-50% + ${stamp.crop.x}px), calc(-50% + ${stamp.crop.y}px)) scale(${stamp.crop.zoom})`,
-          }}
+          className="h-full w-full object-cover"
           draggable={false}
         />
+        {/* Hairline white inner border — subtle frame inside the photo */}
+        <div className="pointer-events-none absolute inset-[5%] border border-white/80" />
+
+        {/* Date chip — top left of the photo */}
+        {showDate && (
+          <div
+            className={cn(
+              'absolute left-[6%] top-[6%] flex items-center justify-center rounded-[2px] bg-white text-stamp-ink shadow-sm',
+              size === 'sm' && 'px-1 py-0 text-[9px]',
+              size === 'md' && 'px-1.5 py-0 text-xs',
+              size === 'full' && 'px-1.5 py-0 text-[11px]',
+              size === 'lg' && 'px-2 py-0.5 text-base',
+              size === 'xl' && 'px-2.5 py-1 text-xl',
+            )}
+          >
+            <span className="font-serif font-medium leading-none">
+              {dateText}
+            </span>
+          </div>
+        )}
+
+        {/* Mood dot — bottom right of the photo. Smaller at compact sizes. */}
+        {showMoodDot && (
+          <div
+            className={cn(
+              'absolute bottom-[6%] right-[6%] rounded-full ring-1 ring-white',
+              moodBgClass(stamp.mood),
+              size === 'lg' || size === 'xl' ? 'size-3 ring-2' : 'size-2',
+            )}
+            aria-label={`감정: ${stamp.mood}`}
+          />
+        )}
       </div>
 
-      {/* Hairline white inner border (decorative frame inside the photo) */}
-      <div className="pointer-events-none absolute inset-[5%] border border-white/80" />
-
-      {/* Date chip — top left */}
-      {showDate && (
-        <div
-          className={cn(
-            'absolute left-[6%] top-[6%] flex items-center justify-center rounded-[2px] bg-white text-stamp-ink shadow-sm',
-            size === 'sm' && 'px-1 py-0 text-[9px]',
-            size === 'md' && 'px-1.5 py-0 text-xs',
-            size === 'full' && 'px-1.5 py-0 text-[11px]',
-            size === 'lg' && 'px-2 py-0.5 text-base',
-            size === 'xl' && 'px-2.5 py-1 text-xl',
-          )}
-        >
-          <span className="font-serif font-medium leading-none">
-            {dateText}
-          </span>
-        </div>
-      )}
-
-      {/* Mood dot — bottom right */}
-      {showMoodDot && (
-        <div
-          className={cn(
-            'absolute bottom-[8%] right-[8%] size-3 rounded-full ring-2 ring-white',
-            moodBgClass(stamp.mood),
-          )}
-          aria-label={`감정: ${stamp.mood}`}
-        />
-      )}
+      {/* Bottom paper area: 25% — kept intentionally empty for the
+          minimalist look. The date chip lives on the photo above. */}
+      <div className="absolute bottom-0 left-0 right-0 h-[25%]" />
 
       {/* Perforation overlay — no stroke for cleaner real-stamp look. */}
       <svg
