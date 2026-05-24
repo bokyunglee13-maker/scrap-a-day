@@ -40,7 +40,7 @@ export function DayCell({
         <div className="opacity-30">
           <EmptyStamp
             date={iso}
-            size="md"
+            size="full"
             isToday={false}
             onClick={() => toast("내일을 기다려요")}
           />
@@ -55,7 +55,7 @@ export function DayCell({
       <div className="flex flex-col items-center">
         <Stamp
           stamp={stamp}
-          size="md"
+          size="full"
           showDate
           showMood
           onClick={() => router.push(`/stamp/${stamp.date}`)}
@@ -69,7 +69,7 @@ export function DayCell({
     <div className="flex flex-col items-center gap-1">
       <EmptyStamp
         date={iso}
-        size="md"
+        size="full"
         isToday={isToday}
         onClick={() => router.push(`/new?date=${iso}`)}
       />

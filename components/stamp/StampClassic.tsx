@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
 import { getClassicPerforationPath } from '@/lib/perforation';
 
-export type StampSize = 'sm' | 'md' | 'lg' | 'xl';
+export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 export interface StampProps {
   stamp: Stamp;
@@ -25,6 +25,7 @@ const SIZE_CLASS: Record<StampSize, string> = {
   md: 'w-20',
   lg: 'w-48',
   xl: 'w-72',
+  full: 'w-full',
 };
 
 // SVG viewBox uses 3:4 — 90×120 keeps the perforation math integer-friendly.
@@ -33,7 +34,8 @@ const VB_H = 120;
 
 function formatStampDate(iso: string, size: StampSize): string {
   const date = parseISO(iso);
-  if (size === 'sm' || size === 'md') return format(date, 'd');
+  // 'full' sizes responsively to its container — treat as compact for date.
+  if (size === 'sm' || size === 'md' || size === 'full') return format(date, 'd');
   return format(date, 'M월 d일', { locale: ko });
 }
 
@@ -89,7 +91,7 @@ export function StampClassic({
   }, [photoUrl]);
 
   const dateText = formatStampDate(stamp.date, size);
-  const isSmall = size === 'sm' || size === 'md';
+  const isSmall = size === 'sm' || size === 'md' || size === 'full';
   const showMoodDot =
     showMood && stamp.mood !== null && stamp.moodVisible === true;
 
@@ -133,6 +135,7 @@ export function StampClassic({
               'font-serif font-medium',
               size === 'sm' && 'text-[10px]',
               size === 'md' && 'text-sm',
+              size === 'full' && 'text-xs',
               size === 'lg' && 'text-2xl',
               size === 'xl' && 'text-3xl',
             )}

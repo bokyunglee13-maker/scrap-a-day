@@ -9,7 +9,7 @@ import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getMinimalPerforationPath } from '@/lib/perforation';
 
-export type StampSize = 'sm' | 'md' | 'lg' | 'xl';
+export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 export interface EmptyStampProps {
   date: string; // 'YYYY-MM-DD'
@@ -23,6 +23,7 @@ const SIZE_CLASS: Record<StampSize, string> = {
   md: 'w-20',
   lg: 'w-48',
   xl: 'w-72',
+  full: 'w-full',
 };
 
 const VB_W = 90;
@@ -30,7 +31,7 @@ const VB_H = 120;
 
 function formatStampDate(iso: string, size: StampSize): string {
   const date = parseISO(iso);
-  if (size === 'sm' || size === 'md') return format(date, 'd');
+  if (size === 'sm' || size === 'md' || size === 'full') return format(date, 'd');
   return format(date, 'M월 d일', { locale: ko });
 }
 
@@ -78,6 +79,7 @@ export function EmptyStamp({
             'font-serif font-medium leading-none',
             size === 'sm' && 'text-xs',
             size === 'md' && 'text-base',
+            size === 'full' && 'text-sm',
             size === 'lg' && 'text-3xl',
             size === 'xl' && 'text-4xl',
           )}
@@ -92,10 +94,12 @@ export function EmptyStamp({
   );
 
   // Today glow — soft gold ring on the OUTER wrapper so it isn't clipped by the mask.
+  // For size='full' we MUST use block+w-full; an inline-block parent collapses to
+  // 0 width when its only child is w-full (circular sizing).
   const wrapper = (
     <div
       className={cn(
-        'inline-block',
+        size === 'full' ? 'block w-full' : 'inline-block',
         isToday && 'rounded-sm ring-2 ring-mood-joy/40 ring-offset-1 ring-offset-stamp-paper',
       )}
     >

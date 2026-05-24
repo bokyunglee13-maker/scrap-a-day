@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
 import { getMinimalPerforationPath } from '@/lib/perforation';
 
-export type StampSize = 'sm' | 'md' | 'lg' | 'xl';
+export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 export interface StampProps {
   stamp: Stamp;
@@ -25,6 +25,7 @@ const SIZE_CLASS: Record<StampSize, string> = {
   md: 'w-20',
   lg: 'w-48',
   xl: 'w-72',
+  full: 'w-full',
 };
 
 const VB_W = 90;
@@ -32,7 +33,7 @@ const VB_H = 120;
 
 function formatStampDate(iso: string, size: StampSize): string {
   const date = parseISO(iso);
-  if (size === 'sm' || size === 'md') return format(date, 'd');
+  if (size === 'sm' || size === 'md' || size === 'full') return format(date, 'd');
   return format(date, 'M월 d일', { locale: ko });
 }
 
@@ -125,6 +126,7 @@ export function StampMinimal({
             'absolute left-[6%] top-[6%] flex items-center justify-center rounded-[2px] bg-white text-stamp-ink shadow-sm',
             size === 'sm' && 'px-1 py-0 text-[9px]',
             size === 'md' && 'px-1.5 py-0 text-xs',
+            size === 'full' && 'px-1.5 py-0 text-[11px]',
             size === 'lg' && 'px-2 py-0.5 text-base',
             size === 'xl' && 'px-2.5 py-1 text-xl',
           )}

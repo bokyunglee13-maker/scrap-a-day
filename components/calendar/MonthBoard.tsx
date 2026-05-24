@@ -85,7 +85,7 @@ export function MonthBoard({ year, month }: MonthBoardProps) {
   // Loading skeleton: muted boxes matching cell footprint.
   if (stamps === undefined) {
     return (
-      <div>
+      <div className="mx-auto max-w-md">
         <div className="grid grid-cols-7 gap-2 text-center font-sans text-xs text-stamp-ink/50">
           {WEEKDAY_LABELS.map((d) => (
             <div key={d} className="py-1">
@@ -116,7 +116,7 @@ export function MonthBoard({ year, month }: MonthBoardProps) {
   const totalDays = getDaysInMonth(monthAnchor);
 
   return (
-    <div>
+    <div className="mx-auto max-w-md">
       <div className="grid grid-cols-7 gap-2 text-center font-sans text-xs text-stamp-ink/50">
         {WEEKDAY_LABELS.map((d) => (
           <div key={d} className="py-1">
