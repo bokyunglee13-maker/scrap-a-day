@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
-import { getMinimalPerforationPath } from '@/lib/perforation';
+import { getPerforationTeeth } from '@/lib/perforation';
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -60,18 +60,8 @@ function moodBgClass(mood: Stamp['mood']): string {
   }
 }
 
-function minimalMaskCss(): React.CSSProperties {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${VB_W} ${VB_H}' preserveAspectRatio='none'><path d='${getMinimalPerforationPath(VB_W, VB_H)}' fill='white' fill-rule='evenodd'/></svg>`;
-  const url = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-  return {
-    WebkitMaskImage: url,
-    maskImage: url,
-    WebkitMaskSize: '100% 100%',
-    maskSize: '100% 100%',
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-  };
-}
+// See StampClassic for the rationale on painted teeth vs CSS mask.
+const MINIMAL_TEETH = getPerforationTeeth(VB_W, VB_H, 'minimal');
 
 export function StampMinimal({
   stamp,
@@ -95,10 +85,9 @@ export function StampMinimal({
   const content = (
     <div
       className={cn(
-        'relative aspect-[3/4] overflow-hidden bg-stamp-paper',
+        'relative aspect-[3/4] overflow-hidden rounded-sm bg-stamp-paper shadow-sm',
         SIZE_CLASS[size],
       )}
-      style={minimalMaskCss()}
     >
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
@@ -147,6 +136,18 @@ export function StampMinimal({
           aria-label={`감정: ${stamp.mood}`}
         />
       )}
+
+      {/* Perforation overlay — painted scallops (smaller + denser for minimal). */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/35"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        preserveAspectRatio="none"
+      >
+        {MINIMAL_TEETH.map((t, i) => (
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.6" />
+        ))}
+      </svg>
     </div>
   );
 

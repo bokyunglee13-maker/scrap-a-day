@@ -7,7 +7,7 @@
 import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getMinimalPerforationPath } from '@/lib/perforation';
+import { getPerforationTeeth } from '@/lib/perforation';
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -35,18 +35,9 @@ function formatStampDate(iso: string, size: StampSize): string {
   return format(date, 'M월 d일', { locale: ko });
 }
 
-function minimalMaskCss(): React.CSSProperties {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${VB_W} ${VB_H}' preserveAspectRatio='none'><path d='${getMinimalPerforationPath(VB_W, VB_H)}' fill='white' fill-rule='evenodd'/></svg>`;
-  const url = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-  return {
-    WebkitMaskImage: url,
-    maskImage: url,
-    WebkitMaskSize: '100% 100%',
-    maskSize: '100% 100%',
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-  };
-}
+// Painted teeth (see StampClassic for rationale). EmptyStamp always uses
+// minimal teeth per PRD §03 §4.4.
+const MINIMAL_TEETH = getPerforationTeeth(VB_W, VB_H, 'minimal');
 
 export function EmptyStamp({
   date,
@@ -61,16 +52,15 @@ export function EmptyStamp({
   const content = (
     <div
       className={cn(
-        'relative aspect-[3/4] overflow-hidden bg-white',
+        'relative aspect-[3/4] overflow-hidden rounded-sm bg-white shadow-sm',
         SIZE_CLASS[size],
       )}
-      style={minimalMaskCss()}
     >
-      {/* White paper backdrop — visible inside the perforation cutout. */}
+      {/* White paper backdrop */}
       <div className="absolute inset-0 bg-white" />
 
-      {/* Faint dotted inner border */}
-      <div className="pointer-events-none absolute inset-[6%] border border-dotted border-stamp-ink/20" />
+      {/* Dotted inner border (bumped from /20 → /40 for visibility) */}
+      <div className="pointer-events-none absolute inset-[6%] border border-dotted border-stamp-ink/40" />
 
       {/* Date — centered, muted gray */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-stamp-ink/40">
@@ -90,6 +80,20 @@ export function EmptyStamp({
           <span className="font-sans text-sm text-mood-joy">오늘, 한 장</span>
         )}
       </div>
+
+      {/* Perforation overlay — painted minimal scallops along the edges.
+          Fill is stamp-paper so scallops blend with the calendar bg, making
+          the empty cell read as a stamp instead of a plain white card. */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/35"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        preserveAspectRatio="none"
+      >
+        {MINIMAL_TEETH.map((t, i) => (
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.6" />
+        ))}
+      </svg>
     </div>
   );
 

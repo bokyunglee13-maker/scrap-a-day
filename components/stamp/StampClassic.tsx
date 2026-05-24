@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
-import { getClassicPerforationPath } from '@/lib/perforation';
+import { getPerforationTeeth } from '@/lib/perforation';
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -62,18 +62,16 @@ function moodBgClass(mood: Stamp['mood']): string {
   }
 }
 
-function classicMaskCss(): React.CSSProperties {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${VB_W} ${VB_H}' preserveAspectRatio='none'><path d='${getClassicPerforationPath(VB_W, VB_H)}' fill='white' fill-rule='evenodd'/></svg>`;
-  const url = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-  return {
-    WebkitMaskImage: url,
-    maskImage: url,
-    WebkitMaskSize: '100% 100%',
-    maskSize: '100% 100%',
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-  };
-}
+// Painted teeth approach (consistent with the cropper). Each circle is
+// centered on the rectangle's edge — only the inside half is visible
+// (SVG clips outside the viewBox). Filled with the body color so the
+// scallop bites read as "paper showing through" against any photo.
+//
+// We use a painted overlay instead of CSS mask-image because at small
+// sizes (size='full' = ~50px in the calendar) the actual mask cuts are
+// 1-2px and effectively invisible. Painted scallops keep the stamp look
+// readable at every size.
+const CLASSIC_TEETH = getPerforationTeeth(VB_W, VB_H, 'classic');
 
 export function StampClassic({
   stamp,
@@ -98,10 +96,9 @@ export function StampClassic({
   const content = (
     <div
       className={cn(
-        'relative aspect-[3/4] overflow-hidden bg-stamp-paper',
+        'relative aspect-[3/4] overflow-hidden rounded-sm bg-stamp-paper shadow-sm',
         SIZE_CLASS[size],
       )}
-      style={classicMaskCss()}
     >
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
@@ -155,6 +152,18 @@ export function StampClassic({
           aria-label={`감정: ${stamp.mood}`}
         />
       )}
+
+      {/* Perforation overlay — painted scallops bite into the photo edges. */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/40"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        preserveAspectRatio="none"
+      >
+        {CLASSIC_TEETH.map((t, i) => (
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.8" />
+        ))}
+      </svg>
     </div>
   );
 
