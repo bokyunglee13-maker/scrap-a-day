@@ -171,6 +171,54 @@ export async function updateStamp(
 }
 
 /**
+ * Re-extract and persist a new cropped photoBlob from the user's previously
+ * preserved originalPhotoBlob. Phase 4 PRD §06 §3.3: crop is the one
+ * "표현(expression)" axis users may revise; this is the dedicated code path
+ * for that — `updateStamp` deliberately cannot accept any blob, so the
+ * "사진 변경 금지" guard at the type level remains intact.
+ *
+ * Caller is responsible for extracting `newCroppedBlob` from the ORIGINAL
+ * (via `extractCroppedBlob(stamp.originalPhotoBlob, …)`). This function
+ * does NOT touch `originalPhotoBlob`, so the user can re-crop again later.
+ */
+export async function recropStamp(
+  id: string,
+  newCroppedBlob: Blob,
+  newCrop: CropData,
+): Promise<Result<Stamp>> {
+  try {
+    const updated = await db.transaction('rw', db.stamps, async () => {
+      const current = await db.stamps.get(id);
+      if (!current) {
+        throw new Error('NOT_FOUND');
+      }
+      if (current.deletedAt !== null) {
+        throw new Error('DELETED');
+      }
+      const next: Stamp = {
+        ...current,
+        photoBlob: newCroppedBlob, // ONLY the cropped blob changes.
+        crop: newCrop,
+        // originalPhotoBlob: preserved verbatim from `current`.
+        updatedAt: new Date(),
+      };
+      await db.stamps.put(next);
+      return next;
+    });
+    return { ok: true, value: updated };
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NOT_FOUND') {
+      return { ok: false, error: 'NOT_FOUND' };
+    }
+    if (e instanceof Error && e.message === 'DELETED') {
+      return { ok: false, error: 'DELETED' };
+    }
+    await logError('recropStamp', e, { id });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
  * Restore a soft-deleted stamp back to active (deletedAt → null).
  * Used by the 5-second "되돌리기" toast and the trash UI (Phase 5).
  *
