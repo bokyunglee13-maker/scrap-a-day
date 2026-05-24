@@ -103,8 +103,9 @@ export function StampClassic({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo region with crop transform */}
-      <div className="absolute inset-[6%] overflow-hidden">
+      {/* Photo region with crop transform — small inset so photo extends
+          close to the perforation edge (real-stamp feel). */}
+      <div className="absolute inset-[3%] overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
@@ -117,7 +118,7 @@ export function StampClassic({
       </div>
 
       {/* Inner ink border (2px) — sits over the photo */}
-      <div className="pointer-events-none absolute inset-[6%] border-2 border-stamp-ink" />
+      <div className="pointer-events-none absolute inset-[3%] border-2 border-stamp-ink" />
 
       {/* Wordmark + date — bottom right */}
       {showDate && (
@@ -153,15 +154,18 @@ export function StampClassic({
         />
       )}
 
-      {/* Perforation overlay — painted scallops bite into the photo edges. */}
+      {/* Perforation overlay — painted scallops bite into the photo edges.
+          No stroke: a clean stamp-paper fill reads as actual paper showing
+          through the perforation cuts (real-stamp look). The earlier stroke
+          version felt 'painted on' to the user. */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/40"
+        className="pointer-events-none absolute inset-0 fill-stamp-paper"
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         preserveAspectRatio="none"
       >
         {CLASSIC_TEETH.map((t, i) => (
-          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.8" />
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} />
         ))}
       </svg>
     </div>

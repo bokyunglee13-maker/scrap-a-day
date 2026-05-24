@@ -85,22 +85,26 @@ export function PhotoCropper({
           minZoom={1}
           maxZoom={3}
           showGrid={false}
-          objectFit="contain"
+          // 'cover' makes the photo fill the entire crop square (no letterbox
+          // rectangle in the middle). The painted-teeth overlay then IS the
+          // stamp boundary — what you see is what you get.
+          objectFit="cover"
           onCropChange={handleCropChange}
           onZoomChange={handleZoomChange}
           onCropComplete={handleCropComplete}
         />
         {/* Stamp-edge overlay: scalloped teeth around the perimeter so the
             cropper looks like an actual stamp instead of a plain square.
-            pointer-events-none keeps drag/pinch fully on the underlying Cropper. */}
+            pointer-events-none keeps drag/pinch fully on the underlying Cropper.
+            No stroke — matches the stamp components' clean scallop fill. */}
         <svg
           aria-hidden
-          className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/15"
+          className="pointer-events-none absolute inset-0 fill-stamp-paper"
           viewBox={`0 0 ${VB} ${VB}`}
           preserveAspectRatio="none"
         >
           {PERFORATION_TEETH.map((t, i) => (
-            <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.3" />
+            <circle key={i} cx={t.cx} cy={t.cy} r={t.r} />
           ))}
         </svg>
       </div>

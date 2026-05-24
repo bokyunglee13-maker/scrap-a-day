@@ -81,17 +81,15 @@ export function EmptyStamp({
         )}
       </div>
 
-      {/* Perforation overlay — painted minimal scallops along the edges.
-          Fill is stamp-paper so scallops blend with the calendar bg, making
-          the empty cell read as a stamp instead of a plain white card. */}
+      {/* Perforation overlay — no stroke for cleaner look. */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/35"
+        className="pointer-events-none absolute inset-0 fill-stamp-paper"
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         preserveAspectRatio="none"
       >
         {MINIMAL_TEETH.map((t, i) => (
-          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.6" />
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} />
         ))}
       </svg>
     </div>

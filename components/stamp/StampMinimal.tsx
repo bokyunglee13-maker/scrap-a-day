@@ -92,8 +92,9 @@ export function StampMinimal({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo region with crop transform */}
-      <div className="absolute inset-[4%] overflow-hidden">
+      {/* Photo region with crop transform — minimal inset, photo reaches
+          close to the perforation edge for a real-stamp look. */}
+      <div className="absolute inset-[2%] overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
@@ -106,7 +107,7 @@ export function StampMinimal({
       </div>
 
       {/* Hairline white inner border */}
-      <div className="pointer-events-none absolute inset-[4%] border border-white/80" />
+      <div className="pointer-events-none absolute inset-[2%] border border-white/80" />
 
       {/* Date chip — top left */}
       {showDate && (
@@ -137,15 +138,15 @@ export function StampMinimal({
         />
       )}
 
-      {/* Perforation overlay — painted scallops (smaller + denser for minimal). */}
+      {/* Perforation overlay — no stroke for cleaner real-stamp look. */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/35"
+        className="pointer-events-none absolute inset-0 fill-stamp-paper"
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         preserveAspectRatio="none"
       >
         {MINIMAL_TEETH.map((t, i) => (
-          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.6" />
+          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} />
         ))}
       </svg>
     </div>

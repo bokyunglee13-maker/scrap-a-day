@@ -258,11 +258,16 @@ function NewStampInner() {
         <span className="w-12" aria-hidden /> {/* spacer balances the back button */}
       </header>
 
-      {/* Hidden file inputs — kept mounted so re-picking always works. */}
+      {/* Hidden file inputs — kept mounted so re-picking always works.
+          Camera input MUST use accept="image/*" (broad). iOS Safari ignores
+          capture="environment" when accept is narrowed to specific MIME types
+          and silently falls back to the gallery sheet. We still run
+          validatePhotoFile on every selected file, so the broader accept
+          doesn't loosen the actual format guarantee. */}
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         capture="environment"
         hidden
         onChange={handleFileChange}
