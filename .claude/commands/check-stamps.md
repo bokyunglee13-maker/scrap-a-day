@@ -87,9 +87,9 @@ const stampSizes = {
 
 #### 3.8 색상 토큰 사용
 
-- 감정 색: `mood.joy`, `mood.calm` 등 Tailwind 토큰
-- 우표 색: `stamp.paper`, `stamp.ink`
-- 하드코딩된 hex 값 (`#FAC775` 등) 직접 사용 X (단, `tailwind.config.ts`는 예외)
+- 감정 색: `bg-mood-joy`, `text-mood-calm` 등 Tailwind v4 토큰 클래스 (또는 CSS 변수 `var(--color-mood-joy)`)
+- 우표 색: `bg-stamp-paper`, `border-stamp-ink`
+- 하드코딩된 hex 값 (`#FAC775` 등) 직접 사용 X (단, `app/globals.css`의 `@theme` 블록은 예외)
 
 ### 4. 리포트
 

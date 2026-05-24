@@ -6,11 +6,13 @@
 
 ## 프론트엔드
 
-- **프레임워크**: Next.js 15 (App Router)
+- **프레임워크**: Next.js 16+ (App Router) — AGENTS.md의 deprecation 경고 참조
 - **언어**: TypeScript (strict mode)
-- **스타일링**: Tailwind CSS
-- **UI 컴포넌트**: shadcn/ui
+- **스타일링**: Tailwind CSS v4 (`@tailwindcss/postcss`, **CSS-first config**)
+- **UI 컴포넌트**: shadcn/ui (v4 호환 버전)
 - **PWA**: `@serwist/next` (또는 `next-pwa`)
+
+> ⚠️ Tailwind v4는 `tailwind.config.ts`를 쓰지 않습니다. 컬러/폰트 토큰은 `app/globals.css`의 `@theme` 블록에 정의합니다 (아래 §컬러 토큰 참고).
 
 ---
 
@@ -55,31 +57,33 @@
 
 ---
 
-## 컬러 토큰 (Tailwind 확장)
+## 컬러 토큰 (Tailwind v4 CSS-first)
 
-`tailwind.config.ts`에 추가:
+Tailwind v4는 `tailwind.config.ts`가 없습니다. `app/globals.css` 상단에 `@theme` 블록으로 정의:
 
-```typescript
-theme: {
-  extend: {
-    colors: {
-      mood: {
-        joy: '#FAC775',      // 기쁨
-        calm: '#C0DD97',     // 평온
-        serene: '#B5D4F4',   // 차분
-        blue: '#CECBF6',     // 우울
-        flutter: '#F4C0D1',  // 설렘
-      },
-      stamp: {
-        paper: '#FBEAF0',    // 우표 배경
-        ink: '#4B1528',      // 클래식 잉크
-      },
-    },
-    fontFamily: {
-      sans: ['var(--font-pretendard)', 'sans-serif'],
-      serif: ['var(--font-crimson)', 'serif'],
-      handwriting: ['var(--font-caveat)', 'cursive'],
-    },
-  },
+```css
+@import "tailwindcss";
+
+@theme {
+  /* 감정 5색 */
+  --color-mood-joy: #FAC775;      /* 기쁨 */
+  --color-mood-calm: #C0DD97;     /* 평온 */
+  --color-mood-serene: #B5D4F4;   /* 차분 */
+  --color-mood-blue: #CECBF6;     /* 우울 */
+  --color-mood-flutter: #F4C0D1;  /* 설렘 */
+
+  /* 우표 컬러 */
+  --color-stamp-paper: #FBEAF0;   /* 우표 배경 */
+  --color-stamp-ink: #4B1528;     /* 클래식 잉크 */
+
+  /* 폰트 (next/font 변수 연결) */
+  --font-sans: var(--font-pretendard), sans-serif;
+  --font-serif: var(--font-crimson), serif;
+  --font-handwriting: var(--font-caveat), cursive;
 }
 ```
+
+### 사용 예
+- Tailwind 클래스 자동 생성: `bg-mood-joy`, `text-stamp-ink`, `border-mood-flutter`, `font-handwriting` 등
+- 임의 CSS에서도: `color: var(--color-mood-joy)`
+- next/font가 `<html>`에 주입한 `--font-pretendard` 등 변수를 그대로 참조 (`app/layout.tsx`에서 설정)
