@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useCurrentMonth } from "@/hooks/useCurrentMonth";
 import { recordDailyVisit } from "@/lib/usage";
+import { cleanExpiredTrash } from "@/lib/trash";
 import { MonthHeader } from "@/components/calendar/MonthHeader";
 import { MonthBoard } from "@/components/calendar/MonthBoard";
 
@@ -10,7 +11,11 @@ export default function HomePage() {
   const { year, month, goPrev, goNext, goToday, isCurrent } = useCurrentMonth();
 
   useEffect(() => {
+    // App-load housekeeping (fire-and-forget):
+    //  - recordDailyVisit: usage tracking for the retrospective (PRD §12.3)
+    //  - cleanExpiredTrash: permanently delete >30-day-trashed stamps (PRD §07)
     void recordDailyVisit();
+    void cleanExpiredTrash();
   }, []);
 
   return (
