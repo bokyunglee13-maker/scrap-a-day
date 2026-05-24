@@ -17,7 +17,8 @@ export interface CropData {
 export interface Stamp {
   id: string;
   date: string; // 'YYYY-MM-DD'
-  photoBlob: Blob;
+  photoBlob: Blob; // display blob (Phase 3+: cropped result)
+  originalPhotoBlob?: Blob; // original (for Phase 4 re-crop); Phase 3 rows may lack this
   crop: CropData;
   memo: string; // max 100 chars
   mood: Mood | null;

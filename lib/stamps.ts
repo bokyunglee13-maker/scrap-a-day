@@ -15,7 +15,8 @@ import type { CropData, Mood, Stamp, StampStyle } from '@/types';
 
 export interface StampInput {
   date: string;
-  photoBlob: Blob;
+  photoBlob: Blob;                // cropped blob (display)
+  originalPhotoBlob?: Blob;       // original (for Phase 4 re-crop). Optional for back-compat.
   crop: CropData;
   memo: string;
   mood: Mood | null;
@@ -56,6 +57,7 @@ export async function createStamp(data: StampInput): Promise<Result<Stamp>> {
         id: crypto.randomUUID(),
         date: data.date,
         photoBlob: data.photoBlob,
+        originalPhotoBlob: data.originalPhotoBlob,
         crop: data.crop,
         memo: data.memo,
         mood: data.mood,
@@ -164,6 +166,54 @@ export async function updateStamp(
       id,
       patchedKeys: Object.keys(patch),
     });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * Restore a soft-deleted stamp back to active (deletedAt → null).
+ * Used by the 5-second "되돌리기" toast and the trash UI (Phase 5).
+ *
+ * Conflicts: if another active stamp now occupies this date (e.g., the user
+ * created a new one after deleting), returns DUPLICATE_DATE — they must
+ * resolve the conflict themselves (PRD §07).
+ */
+export async function restoreStamp(id: string): Promise<Result<Stamp>> {
+  try {
+    const restored = await db.transaction('rw', db.stamps, async () => {
+      const current = await db.stamps.get(id);
+      if (!current) {
+        throw new Error('NOT_FOUND');
+      }
+      if (current.deletedAt === null) {
+        // Already active — idempotent return.
+        return current;
+      }
+      const conflict = await db.stamps
+        .where('date')
+        .equals(current.date)
+        .and((s) => s.id !== id && s.deletedAt === null)
+        .first();
+      if (conflict) {
+        throw new Error('DUPLICATE_DATE');
+      }
+      const next: Stamp = {
+        ...current,
+        deletedAt: null,
+        updatedAt: new Date(),
+      };
+      await db.stamps.put(next);
+      return next;
+    });
+    return { ok: true, value: restored };
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NOT_FOUND') {
+      return { ok: false, error: 'NOT_FOUND' };
+    }
+    if (e instanceof Error && e.message === 'DUPLICATE_DATE') {
+      return { ok: false, error: 'DUPLICATE_DATE' };
+    }
+    await logError('restoreStamp', e, { id });
     return { ok: false, error: 'DB_ERROR' };
   }
 }

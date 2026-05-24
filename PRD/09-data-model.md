@@ -23,7 +23,8 @@ export interface CropData {
 export interface Stamp {
   id: string;                    // UUID
   date: string;                  // 'YYYY-MM-DD' (unique among active stamps)
-  photoBlob: Blob;               // 원본 사진
+  photoBlob: Blob;               // 표시용 (Phase 3부터 crop 적용된 결과)
+  originalPhotoBlob?: Blob;      // 원본 (Phase 4 재크롭용). Phase 3 등록분은 없을 수 있음.
   crop: CropData;
   memo: string;                  // 최대 100자
   mood: Mood | null;

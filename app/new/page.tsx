@@ -218,6 +218,7 @@ function NewStampInner() {
       const input: StampInput = {
         date,
         photoBlob: croppedBlob,
+        originalPhotoBlob: photoFile,  // keep original for Phase 4 re-crop
         crop: cropData,
         memo,
         mood,
