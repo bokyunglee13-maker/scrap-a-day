@@ -81,11 +81,19 @@ type LoadState<T> =
 - IndexedDB 접근하는 컴포넌트는 `'use client'` 필수
 - Server Component 가능한 것은 그대로 둘 것 (예: 정적 헤더, 메타데이터)
 
-### 6. Mobile-first
+### 6. Mobile-first (6번째 핵심 원칙 — PRD §15)
 
-- 모바일 (~640px) 기준으로 먼저 작성
-- 데스크탑은 확장
+- **모바일 (~640px) 기준으로 먼저 작성**, 데스크탑은 디그레이드 확장
+- **터치 타겟 ≥ 44×44 px** (Apple HIG / WCAG 2.5.5). 작은 아이콘은 `p-2` 이상으로 hit-area 확장
+- **input/textarea `font-size ≥ 16px`** (Tailwind `text-base` 이상) — iOS Safari 자동 줌인 방지
+- **키보드 가림 처리**: 포커스 시 `element.scrollIntoView({ block: 'center', behavior: 'smooth' })`
+- **safe-area-inset**: 하단 고정 액션 바가 있으면 `pb-[env(safe-area-inset-bottom)]`
+- **가로 모드**: 깨지지 않게만. 캘린더는 7열 유지 (셀 크기 자동 조정)
+- **길게 누르기 금지** (iOS 컨텍스트 메뉴 충돌). 더블탭만 받는 액션 X
+- **Blob URL** 생성 시 `URL.revokeObjectURL` cleanup (`useEffect` return)
 - 터치 인터랙션 우선 (탭, 스와이프), 호버는 보조
+
+전체 정책: `PRD/15-mobile-first.md`. 작업 끝나면 `/check-mobile`로 자가 검증.
 
 ## shadcn/ui 사용
 

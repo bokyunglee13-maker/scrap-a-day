@@ -238,7 +238,15 @@
 - [ ] 빠진 로딩 스피너 추가
 - [ ] 에러 상태 처리 (PRD §9 화면별 정책 표 대조)
 
-**✅ Phase 5 완료 기준**: MVP 완성. 본인이 만들고, 매일 사용 시작 가능.
+### 5.11 모바일 우선 마무리 (PRD §15)
+- [ ] **PWA 설치 안내 배너** (메인 상단, 1회 dismiss 기억) — iOS Safari ITP 7일 IndexedDB 삭제 대응
+- [ ] **자동 백업 알림**: 마지막 백업이 N일 이전이면 메인 상단 배지 + 토스트
+- [ ] `app/layout.tsx` viewport metadata에 `viewport-fit=cover` 추가 + body `safe-area-inset` padding
+- [ ] `/check-mobile` 슬래시 커맨드로 자가 점검 통과
+- [ ] 실제 단말 (iPhone Safari + Android Chrome) 1회 이상 테스트
+- [ ] ADR 추가: `0005-ios-itp-mitigation.md` (왜 PWA 설치 권유 + v1.1 클라우드 백업인가)
+
+**✅ Phase 5 완료 기준**: MVP 완성. 본인이 만들고, 매일 사용 시작 가능. iOS ITP 대응 정책 UI 노출 완료.
 
 ---
 

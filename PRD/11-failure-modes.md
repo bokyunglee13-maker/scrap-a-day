@@ -135,3 +135,19 @@ type LoadState<T> =
   | { status: 'empty' }
   | { status: 'error', message: string, recovery?: () => void };
 ```
+
+---
+
+## 9.5 모바일 특유 실패 모드
+
+상세는 `PRD/15-mobile-first.md` §15.5. 요약:
+
+| 실패 케이스 | 처리 / 완화 |
+|---|---|
+| **iOS Safari ITP 7일 IndexedDB 자동 삭제** 🚨 | PWA 설치 권유 (Phase 5) + 자동 백업 알림 + v1.1 클라우드 백업 |
+| iOS 사진 EXIF orientation 회전 | `react-easy-crop` 자동 처리 — Phase 3 검증 시 확인 |
+| 구형 단말 메모리 부족 (사진 OOM) | 장변 2048px 자동 다운스케일 (§9.2.2와 동일 정책) |
+| 모바일 Safari Blob URL leak | `useEffect cleanup`에서 `URL.revokeObjectURL` (이미 stamp 컴포넌트 적용) |
+| PWA 미설치 사용자 | 안내 배너 (메인 상단, 1회 dismiss 기억) — Phase 5 |
+
+iOS ITP는 **데이터 손실** 위험으로 §9.1 "비파괴 우선" 원칙의 가장 큰 위협. v1.1 클라우드 백업이 최우선 (PRD §14).

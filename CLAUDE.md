@@ -24,22 +24,24 @@
 프로젝트 루트/
 ├── CLAUDE.md              ← 이 파일 (얇은 라우터)
 ├── ROADMAP.md             ← Phase별 작업 체크리스트
-├── PRD/                   ← 분할된 상세 명세 (14개 파일)
+├── PRD/                   ← 분할된 상세 명세 (15개 파일)
 │   ├── 00-index.md        ← PRD 라우터
 │   ├── 01-overview.md     ← 핵심 가치 (항상 읽음)
 │   ├── 02-tech-stack.md
 │   ├── 03-stamp-design.md
 │   ├── ... (04~14)
+│   └── 15-mobile-first.md ← 모바일 우선 정책 (6번째 원칙)
 ├── .claude/
 │   ├── agents/            ← 4개 서브에이전트
 │   │   ├── stamp-designer.md
 │   │   ├── db-architect.md
 │   │   ├── ui-builder.md
 │   │   └── prd-guardian.md
-│   └── commands/          ← 4개 슬래시 커맨드
+│   └── commands/          ← 5개 슬래시 커맨드
 │       ├── start-phase.md
 │       ├── check-prd.md
 │       ├── check-stamps.md
+│       ├── check-mobile.md
 │       └── end-phase.md
 └── docs/
     └── decisions/         ← ADR 디렉토리 (Phase 5에서 작성)
@@ -57,13 +59,14 @@
 
 ## 2. 핵심 설계 원칙 (의사결정 시 항상 우선)
 
-이 5개와 충돌하는 결정이 보이면 **반드시 사용자에게 확인**:
+이 6개와 충돌하는 결정이 보이면 **반드시 사용자에게 확인**:
 
 1. **사진은 못 바꾼다** — 자기검열 방지
 2. **빈 우표도 우표다** — 시트 통일성
 3. **부담 없는 일기** — 메모 100자, 하루 1장
 4. **사진이 주인공** — 우표 테두리는 액자
 5. **데이터는 사용자의 것** — 로컬 저장, 백업 우선, 비파괴
+6. **모바일 우선** — 주 사용 환경이 모바일. 데스크탑은 디그레이드. 상세: `PRD/15-mobile-first.md`
 
 ---
 
@@ -107,6 +110,7 @@ Phase 시작은 **`/start-phase <N>` 슬래시 커맨드 사용 권장** — 자
 | `/start-phase <N>` | Phase 시작. 필요 PRD만 로드 + 체크리스트 표시 |
 | `/check-prd <feature>` | 특정 기능이 PRD와 일치하는지 검증 (prd-guardian 호출) |
 | `/check-stamps` | 우표 3종이 동일 인터페이스인지 검증 |
+| `/check-mobile [path]` | 모바일 우선 정책(PRD §15) 자가 점검 (터치 타겟, 줌 방지, safe-area 등) |
 | `/end-phase <N>` | Phase 종료. 검증 + 커밋 메시지 초안 |
 
 ### 4.3 위임 vs 직접 처리 판단
@@ -210,6 +214,16 @@ Phase 시작은 **`/start-phase <N>` 슬래시 커맨드 사용 권장** — 자
 - 등록 불가
 - 셀 탭 시 "내일을 기다려요"
 - 시각: `opacity: 0.3`
+
+### 7.7 모바일 input 자동 줌 방지
+- input/textarea `font-size ≥ 16px` (= Tailwind `text-base`)
+- 16px 미만이면 iOS Safari가 강제 zoom-in
+- 상세: `PRD/15-mobile-first.md` §15.2.3
+
+### 7.8 iOS Safari ITP 7일 데이터 삭제
+- 사용자가 7일 미방문 시 IndexedDB 통째로 삭제됨 (Apple ITP)
+- 완화: PWA 설치 안내 (Phase 5) + 자동 백업 알림 + v1.1 클라우드 백업
+- 상세: `PRD/15-mobile-first.md` §15.5.1
 
 ---
 
