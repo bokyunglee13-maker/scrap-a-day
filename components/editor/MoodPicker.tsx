@@ -22,11 +22,12 @@ interface MoodSpec {
   bg: string;
 }
 
+// Labels MUST match PRD §03 §4.3 verbatim. (Earlier '고요/울적' was an agent typo.)
 const MOODS: MoodSpec[] = [
   { mood: 'joy', label: '기쁨', bg: 'bg-mood-joy' },
   { mood: 'calm', label: '평온', bg: 'bg-mood-calm' },
-  { mood: 'serene', label: '고요', bg: 'bg-mood-serene' },
-  { mood: 'blue', label: '울적', bg: 'bg-mood-blue' },
+  { mood: 'serene', label: '차분', bg: 'bg-mood-serene' },
+  { mood: 'blue', label: '우울', bg: 'bg-mood-blue' },
   { mood: 'flutter', label: '설렘', bg: 'bg-mood-flutter' },
 ];
 
@@ -43,7 +44,7 @@ export function MoodPicker({
       <div
         role="radiogroup"
         aria-label="감정 선택"
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-3 gap-3"
       >
         {MOODS.map((m) => {
           const isOn = value === m.mood;
@@ -55,13 +56,25 @@ export function MoodPicker({
               aria-checked={isOn}
               aria-label={`${m.label} 선택`}
               onClick={() => onChange(m.mood)}
-              className={cn(
-                'size-11 rounded-full transition-shadow',
-                m.bg,
-                isOn &&
-                  'ring-2 ring-stamp-ink ring-offset-2 ring-offset-stamp-paper',
-              )}
-            />
+              className="flex flex-col items-center gap-1.5 rounded-md py-2 transition-colors hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span
+                className={cn(
+                  'size-11 rounded-full transition-shadow',
+                  m.bg,
+                  isOn &&
+                    'ring-2 ring-stamp-ink ring-offset-2 ring-offset-stamp-paper',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-xs',
+                  isOn ? 'font-medium text-stamp-ink' : 'text-stamp-ink/60',
+                )}
+              >
+                {m.label}
+              </span>
+            </button>
           );
         })}
         <button
@@ -70,13 +83,25 @@ export function MoodPicker({
           aria-checked={!moodSelected}
           aria-label="감정 없음"
           onClick={() => onChange(null)}
-          className={cn(
-            'size-11 rounded-full border-2 border-dashed border-stamp-ink/30 text-stamp-ink/40 flex items-center justify-center transition-shadow',
-            !moodSelected &&
-              'ring-2 ring-stamp-ink ring-offset-2 ring-offset-stamp-paper',
-          )}
+          className="flex flex-col items-center gap-1.5 rounded-md py-2 transition-colors hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <X className="size-5" />
+          <span
+            className={cn(
+              'flex size-11 items-center justify-center rounded-full border-2 border-dashed border-stamp-ink/30 text-stamp-ink/40 transition-shadow',
+              !moodSelected &&
+                'ring-2 ring-stamp-ink ring-offset-2 ring-offset-stamp-paper',
+            )}
+          >
+            <X className="size-5" />
+          </span>
+          <span
+            className={cn(
+              'text-xs',
+              !moodSelected ? 'font-medium text-stamp-ink' : 'text-stamp-ink/60',
+            )}
+          >
+            선택 안 함
+          </span>
         </button>
       </div>
 

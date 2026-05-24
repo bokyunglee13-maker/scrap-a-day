@@ -24,7 +24,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Camera, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -121,7 +121,13 @@ function NewStampInner() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Two separate hidden inputs — one forces camera (capture="environment"),
+  // one defaults to the OS photo picker (no capture attr). Without two inputs,
+  // iOS Safari either goes straight to camera (with capture) or only ever
+  // shows the gallery sheet — there's no way to offer both options through a
+  // single input.
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   // Blob URL hygiene: revoke when the URL changes or on unmount. PRD §15.5.4.
   useEffect(() => {
@@ -137,8 +143,11 @@ function NewStampInner() {
     mood !== null ||
     style !== 'minimal';
 
-  const handlePickPhotoClick = () => {
-    fileInputRef.current?.click();
+  const handleOpenCamera = () => {
+    cameraInputRef.current?.click();
+  };
+  const handleOpenGallery = () => {
+    galleryInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,29 +258,48 @@ function NewStampInner() {
         <span className="w-12" aria-hidden /> {/* spacer balances the back button */}
       </header>
 
-      {/* Hidden file input is always mounted so re-picking works */}
+      {/* Hidden file inputs — kept mounted so re-picking always works. */}
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         capture="environment"
         hidden
         onChange={handleFileChange}
       />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        onChange={handleFileChange}
+      />
 
       <section className="mt-6">
         {phase === 'pickPhoto' && (
-          <div className="flex flex-col items-center gap-4 py-12">
+          <div className="flex flex-col items-center gap-6 py-12">
             <p className="font-handwriting text-2xl text-stamp-ink/70">
               오늘, 한 장
             </p>
-            <Button
-              type="button"
-              onClick={handlePickPhotoClick}
-              className="h-14 px-8 text-base"
-            >
-              사진 선택
-            </Button>
+            <div className="flex w-full max-w-xs flex-col gap-3">
+              <Button
+                type="button"
+                onClick={handleOpenCamera}
+                className="h-14 w-full gap-2 text-base"
+              >
+                <Camera className="size-5" />
+                카메라로 찍기
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleOpenGallery}
+                className="h-14 w-full gap-2 text-base"
+              >
+                <ImageIcon className="size-5" />
+                사진 보관함에서 선택
+              </Button>
+            </div>
             <p className="text-xs text-stamp-ink/40">
               JPEG · PNG · WEBP · 최대 20MB
             </p>

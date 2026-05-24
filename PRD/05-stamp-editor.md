@@ -16,8 +16,10 @@
 ## 플로우 (3단계)
 
 ### 1. 사진 선택
-- 시스템 사진 picker (`<input type="file" accept="image/*">`)
-- 모바일에서 카메라 직접 호출도 가능 (`capture="environment"`)
+- **두 가지 진입점을 명시 노출** (PRD §15 모바일 우선):
+  - `카메라로 찍기` 버튼 → `<input type="file" capture="environment">` (즉시 카메라)
+  - `사진 보관함에서 선택` 버튼 → `<input type="file">` (capture 없음, OS 갤러리)
+  - 단일 input + `capture` 만으로는 iOS Safari가 항상 카메라만 띄움 → 두 input 분리 필수
 - **사전 검증**:
   - 파일 크기 > 20MB → 안내 "더 작은 사진을 선택해주세요"
   - HEIC 등 미지원 포맷 → 안내 + JPEG/PNG 권장

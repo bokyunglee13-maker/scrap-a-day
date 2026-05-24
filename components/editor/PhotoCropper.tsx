@@ -12,6 +12,14 @@
 import { useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
+import { getPerforationTeeth } from '@/lib/perforation';
+
+// 11×11 minimal teeth around a square viewBox give a clear stamp-edge feel
+// without crowding the cropper. The teeth render OUTSIDE the photo region as
+// white scalloped semicircles — they overlap the cropper edges so the user
+// sees "this will become a stamp" while cropping.
+const VB = 90;
+const PERFORATION_TEETH = getPerforationTeeth(VB, VB, 'minimal');
 
 export interface CropperPatch {
   x?: number;
@@ -82,7 +90,23 @@ export function PhotoCropper({
           onZoomChange={handleZoomChange}
           onCropComplete={handleCropComplete}
         />
+        {/* Stamp-edge overlay: scalloped teeth around the perimeter so the
+            cropper looks like an actual stamp instead of a plain square.
+            pointer-events-none keeps drag/pinch fully on the underlying Cropper. */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0 fill-stamp-paper stroke-stamp-ink/15"
+          viewBox={`0 0 ${VB} ${VB}`}
+          preserveAspectRatio="none"
+        >
+          {PERFORATION_TEETH.map((t, i) => (
+            <circle key={i} cx={t.cx} cy={t.cy} r={t.r} strokeWidth="0.3" />
+          ))}
+        </svg>
       </div>
+      <p className="text-center text-xs text-stamp-ink/40">
+        우표 모양으로 잘려요 — 가장자리는 잘립니다
+      </p>
 
       <label className="flex flex-col gap-1">
         <span className="text-xs text-stamp-ink/60">확대/축소</span>
