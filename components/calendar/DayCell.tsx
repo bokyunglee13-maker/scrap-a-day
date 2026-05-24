@@ -33,18 +33,25 @@ export function DayCell({
     return <div aria-hidden className="aspect-[3/4]" />;
   }
 
+  // NOTE on wrapper classes:
+  // We deliberately do NOT use `items-center` on these flex columns.
+  // Stamps and EmptyStamps use size="full" (= w-full) in the calendar so
+  // each one fills its grid cell. In a flex column, `items-center` is
+  // `align-items: center`, which lets children fit their content width —
+  // and a child with `w-full` referencing its (auto-sized) parent then
+  // collapses to 0. Default `align-items: stretch` makes children take
+  // the full cross-axis width, which is what we want here.
+
   // Future date: muted EmptyStamp, tap → toast only.
   if (isFuture) {
     return (
-      <div className="flex flex-col items-center gap-1">
-        <div className="opacity-30">
-          <EmptyStamp
-            date={iso}
-            size="full"
-            isToday={false}
-            onClick={() => toast("내일을 기다려요")}
-          />
-        </div>
+      <div className="flex flex-col gap-1 opacity-30">
+        <EmptyStamp
+          date={iso}
+          size="full"
+          isToday={false}
+          onClick={() => toast("내일을 기다려요")}
+        />
       </div>
     );
   }
@@ -52,7 +59,7 @@ export function DayCell({
   // Filled stamp.
   if (stamp !== null) {
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col">
         <Stamp
           stamp={stamp}
           size="full"
@@ -66,7 +73,7 @@ export function DayCell({
 
   // Empty past/today cell.
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col gap-1">
       <EmptyStamp
         date={iso}
         size="full"
