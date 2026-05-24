@@ -121,10 +121,28 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
   }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Scrap a Day — project tokens (PRD §02)
+   Mood/stamp colors + font family aliases for next/font.
+   Generates Tailwind classes: bg-mood-joy, text-stamp-ink,
+   font-serif (Crimson Pro), font-handwriting (Caveat), etc.
+   ───────────────────────────────────────────────────────── */
+@theme {
+  --color-mood-joy: #fac775;
+  --color-mood-calm: #c0dd97;
+  --color-mood-serene: #b5d4f4;
+  --color-mood-blue: #cecbf6;
+  --color-mood-flutter: #f4c0d1;
+
+  --color-stamp-paper: #fbeaf0;
+  --color-stamp-ink: #4b1528;
+
+  --font-sans: var(--font-noto-sans-kr), sans-serif;
+  --font-serif: var(--font-crimson), serif;
+  --font-handwriting: var(--font-caveat), cursive;
 }

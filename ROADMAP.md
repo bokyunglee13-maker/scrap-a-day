@@ -37,7 +37,7 @@
 
 ### 1.3 디자인 시스템
 - [ ] `app/globals.css`의 `@theme` 블록에 컬러 토큰 추가 (감정 5색, 우표 컬러) — Tailwind v4 CSS-first
-- [ ] `app/layout.tsx`에 next/font로 폰트 로드 (Pretendard, Crimson Pro, Caveat)
+- [ ] `app/layout.tsx`에 next/font로 폰트 로드 (Noto Sans KR, Crimson Pro, Caveat)
 - [ ] `globals.css`에 베이스 스타일
 
 ### 1.4 우표 컴포넌트 (정적 데이터로)

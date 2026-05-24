@@ -41,9 +41,9 @@
 
 ## 폰트
 
-- **한국어**: Pretendard Variable (sans-serif)
+- **한국어**: Noto Sans KR (Google Fonts, sans-serif) — Pretendard가 Google Fonts에 없어 대체. 시각 인상은 약간 다르나 가독성/한글 커버리지 우수
 - **영어 날짜/숫자**: Crimson Pro (serif)
-- **손글씨 캡션 (폴라로이드)**: Caveat (영문) + 나눔손글씨 (한글, 선택)
+- **손글씨 캡션 (폴라로이드)**: Caveat (영문) — 한글 손글씨는 v1.1에서 검토
 
 `next/font`로 로드. `app/layout.tsx`에서 CSS 변수로 노출.
 
@@ -77,7 +77,7 @@ Tailwind v4는 `tailwind.config.ts`가 없습니다. `app/globals.css` 상단에
   --color-stamp-ink: #4B1528;     /* 클래식 잉크 */
 
   /* 폰트 (next/font 변수 연결) */
-  --font-sans: var(--font-pretendard), sans-serif;
+  --font-sans: var(--font-noto-sans-kr), sans-serif;
   --font-serif: var(--font-crimson), serif;
   --font-handwriting: var(--font-caveat), cursive;
 }
@@ -86,4 +86,4 @@ Tailwind v4는 `tailwind.config.ts`가 없습니다. `app/globals.css` 상단에
 ### 사용 예
 - Tailwind 클래스 자동 생성: `bg-mood-joy`, `text-stamp-ink`, `border-mood-flutter`, `font-handwriting` 등
 - 임의 CSS에서도: `color: var(--color-mood-joy)`
-- next/font가 `<html>`에 주입한 `--font-pretendard` 등 변수를 그대로 참조 (`app/layout.tsx`에서 설정)
+- next/font가 `<html>`에 주입한 `--font-noto-sans-kr` 등 변수를 그대로 참조 (`app/layout.tsx`에서 설정)
