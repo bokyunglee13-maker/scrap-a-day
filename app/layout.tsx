@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR, Crimson_Pro, Caveat } from "next/font/google";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ErrorListeners } from "@/components/ErrorListeners";
 import "./globals.css";
 
 const notoSansKr = Noto_Sans_KR({
@@ -37,7 +39,8 @@ export default function RootLayout({
       className={`${notoSansKr.variable} ${crimsonPro.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-stamp-paper text-stamp-ink">
-        {children}
+        <ErrorListeners />
+        <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
   );
