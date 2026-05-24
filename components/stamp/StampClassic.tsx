@@ -103,50 +103,51 @@ export function StampClassic({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Square photo region: top 0-75% (a 1:1 square fills full width).
-          The blob is already cropped square via canvas, so object-cover
-          shows the user's exact selection with no clipping or transform. */}
-      <div className="absolute left-0 right-0 top-0 h-[75%] overflow-hidden">
-        <img
-          src={photoUrl}
-          alt={buildAlt(stamp)}
-          className="h-full w-full object-cover"
-          draggable={false}
-        />
-        {/* Inner ink border — frames the photo */}
-        <div className="pointer-events-none absolute inset-[4%] border-2 border-stamp-ink" />
-      </div>
+      {/* Photo fills the entire stamp (no paper bottom — user request).
+          Tradeoff: 1:1 cropped blob in 3:4 container with object-cover
+          trims ~12.5% top + bottom. Acceptable per user feedback. */}
+      <img
+        src={photoUrl}
+        alt={buildAlt(stamp)}
+        className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
+      />
 
-      {/* Bottom paper area: 25% — date + wordmark on bottom right */}
-      <div className="absolute bottom-0 left-0 right-0 h-[25%]">
-        {showDate && (
-          <div className="absolute bottom-[15%] right-[8%] flex flex-col items-end leading-none text-stamp-ink">
-            {!isSmall && (
-              <span className="font-serif text-[8px] tracking-[0.2em] opacity-70">
-                SCRAP·A·DAY
-              </span>
-            )}
-            <span
-              className={cn(
-                'font-serif font-medium',
-                size === 'sm' && 'text-[10px]',
-                size === 'md' && 'text-sm',
-                size === 'full' && 'text-xs',
-                size === 'lg' && 'text-2xl',
-                size === 'xl' && 'text-3xl',
-              )}
-            >
-              {dateText}
+      {/* Date — bottom LEFT (moved from bottom-right so mood can take the
+          polaroid-style bottom-right position). Dark chip for legibility
+          over arbitrary photo content. */}
+      {showDate && (
+        <div
+          className={cn(
+            'absolute left-[6%] flex flex-col items-start leading-none rounded-[2px] bg-stamp-ink/85 text-stamp-paper',
+            isSmall ? 'bottom-[6%] px-1 py-0' : 'bottom-[5%] px-1.5 py-0.5',
+          )}
+        >
+          {!isSmall && (
+            <span className="font-serif text-[8px] tracking-[0.2em] opacity-70">
+              SCRAP·A·DAY
             </span>
-          </div>
-        )}
-      </div>
+          )}
+          <span
+            className={cn(
+              'font-serif font-medium',
+              size === 'sm' && 'text-[10px]',
+              size === 'md' && 'text-sm',
+              size === 'full' && 'text-xs',
+              size === 'lg' && 'text-2xl',
+              size === 'xl' && 'text-3xl',
+            )}
+          >
+            {dateText}
+          </span>
+        </div>
+      )}
 
-      {/* Mood dot — TOP RIGHT corner of photo. Smaller at compact sizes. */}
+      {/* Mood dot — BOTTOM RIGHT, uniform with Minimal and Polaroid. */}
       {showMoodDot && (
         <div
           className={cn(
-            'absolute right-[8%] top-[6%] rounded-full ring-1 ring-white',
+            'absolute bottom-[6%] right-[6%] rounded-full ring-1 ring-white',
             moodBgClass(stamp.mood),
             isSmall ? 'size-2' : 'size-3 ring-2',
           )}
