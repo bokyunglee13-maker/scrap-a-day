@@ -1,0 +1,202 @@
+// lib/stamps.ts
+// Stamp CRUD per PRD §09. All functions return Result<T> — none throw.
+//
+// Invariants enforced:
+//   - Unique (date, deletedAt IS NULL) — Dexie does not enforce; we do.
+//   - createStamp inside `rw` transaction on db.stamps.
+//   - updateStamp signature CANNOT accept photoBlob (PRD §06 §3.4: no replacement).
+//   - softDeleteStamp sets deletedAt; never `db.stamps.delete()`.
+//   - All catches call `logError` with sanitized context (no Blob, no memo).
+
+import { db } from '@/lib/db';
+import { logError } from '@/lib/errors';
+import type { Result } from '@/lib/result';
+import type { CropData, Mood, Stamp, StampStyle } from '@/types';
+
+export interface StampInput {
+  date: string;
+  photoBlob: Blob;
+  crop: CropData;
+  memo: string;
+  mood: Mood | null;
+  moodVisible: boolean;
+  style: StampStyle;
+}
+
+/**
+ * Create a new stamp for `data.date`. Returns DUPLICATE_DATE if an active
+ * (non-trashed) stamp already exists for that date.
+ */
+export async function createStamp(data: StampInput): Promise<Result<Stamp>> {
+  try {
+    // Unique pre-check (outside the tx is fine — the tx still catches a race).
+    const existing = await db.stamps
+      .where('date')
+      .equals(data.date)
+      .and((s) => s.deletedAt === null)
+      .first();
+
+    if (existing) {
+      return { ok: false, error: 'DUPLICATE_DATE' };
+    }
+
+    const stamp = await db.transaction('rw', db.stamps, async () => {
+      // Re-check inside tx to close the race window.
+      const racer = await db.stamps
+        .where('date')
+        .equals(data.date)
+        .and((s) => s.deletedAt === null)
+        .first();
+      if (racer) {
+        throw new Error('DUPLICATE_DATE');
+      }
+
+      const now = new Date();
+      const newStamp: Stamp = {
+        id: crypto.randomUUID(),
+        date: data.date,
+        photoBlob: data.photoBlob,
+        crop: data.crop,
+        memo: data.memo,
+        mood: data.mood,
+        moodVisible: data.moodVisible,
+        style: data.style,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      };
+      await db.stamps.add(newStamp);
+      return newStamp;
+    });
+
+    return { ok: true, value: stamp };
+  } catch (e) {
+    if (e instanceof Error && e.message === 'DUPLICATE_DATE') {
+      return { ok: false, error: 'DUPLICATE_DATE' };
+    }
+    await logError('createStamp', e, {
+      date: data.date,
+      style: data.style,
+      mood: data.mood,
+    });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * Find the active stamp for an exact date string, or null.
+ */
+export async function getStampByDate(
+  date: string,
+): Promise<Result<Stamp | null>> {
+  try {
+    const stamp = await db.stamps
+      .where('date')
+      .equals(date)
+      .and((s) => s.deletedAt === null)
+      .first();
+    return { ok: true, value: stamp ?? null };
+  } catch (e) {
+    await logError('getStampByDate', e, { date });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * All active stamps with date in the given month. Used by the calendar.
+ * Uses an indexed `between` query for speed.
+ */
+export async function getStampsByMonth(
+  year: number,
+  month1to12: number,
+): Promise<Result<Stamp[]>> {
+  try {
+    const mm = String(month1to12).padStart(2, '0');
+    // Inclusive lower bound, exclusive upper bound via string prefix range.
+    const lower = `${year}-${mm}-00`;
+    const upper = `${year}-${mm}-32`;
+    const stamps = await db.stamps
+      .where('date')
+      .between(lower, upper, false, false)
+      .and((s) => s.deletedAt === null)
+      .toArray();
+    return { ok: true, value: stamps };
+  } catch (e) {
+    await logError('getStampsByMonth', e, { year, month: month1to12 });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * Update mutable fields of a stamp. Photo blob CANNOT be replaced — the type
+ * signature itself prevents it (Partial<Pick<…>> excludes photoBlob).
+ */
+export async function updateStamp(
+  id: string,
+  patch: Partial<Pick<Stamp, 'memo' | 'mood' | 'moodVisible' | 'style' | 'crop'>>,
+): Promise<Result<Stamp>> {
+  try {
+    const updated = await db.transaction('rw', db.stamps, async () => {
+      const current = await db.stamps.get(id);
+      if (!current) {
+        throw new Error('NOT_FOUND');
+      }
+      if (current.deletedAt !== null) {
+        throw new Error('DELETED');
+      }
+      const next: Stamp = {
+        ...current,
+        ...patch,
+        updatedAt: new Date(),
+      };
+      await db.stamps.put(next);
+      return next;
+    });
+    return { ok: true, value: updated };
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NOT_FOUND') {
+      return { ok: false, error: 'NOT_FOUND' };
+    }
+    if (e instanceof Error && e.message === 'DELETED') {
+      return { ok: false, error: 'DELETED' };
+    }
+    await logError('updateStamp', e, {
+      id,
+      patchedKeys: Object.keys(patch),
+    });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * Soft-delete: sets deletedAt to now. Stamp moves to the trash.
+ * Never calls db.stamps.delete().
+ */
+export async function softDeleteStamp(id: string): Promise<Result<Stamp>> {
+  try {
+    const updated = await db.transaction('rw', db.stamps, async () => {
+      const current = await db.stamps.get(id);
+      if (!current) {
+        throw new Error('NOT_FOUND');
+      }
+      if (current.deletedAt !== null) {
+        // Already trashed — idempotent return.
+        return current;
+      }
+      const next: Stamp = {
+        ...current,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await db.stamps.put(next);
+      return next;
+    });
+    return { ok: true, value: updated };
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NOT_FOUND') {
+      return { ok: false, error: 'NOT_FOUND' };
+    }
+    await logError('softDeleteStamp', e, { id });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}

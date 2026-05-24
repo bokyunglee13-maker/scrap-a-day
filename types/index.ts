@@ -1,6 +1,6 @@
 // Scrap a Day — shared type definitions
-// Phase 1.4: Stamp visual components only.
-// Other domain types (Settings, ErrorLog, Usage, ...) belong to Phase 2.
+// Phase 1.4: Stamp visual components.
+// Phase 2.1: Settings, ErrorLog, UsageDay (per PRD §09).
 
 export type Mood = 'joy' | 'calm' | 'serene' | 'blue' | 'flutter';
 
@@ -26,4 +26,27 @@ export interface Stamp {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+}
+
+export interface Settings {
+  id: 'default';
+  defaultStyle: StampStyle;
+  weekStart: 'monday';
+  lastBackupAt: Date | null;
+}
+
+export interface ErrorLog {
+  id: string;
+  timestamp: Date;
+  source: string;
+  message: string;
+  stack?: string;
+  context?: Record<string, unknown>;
+}
+
+export interface UsageDay {
+  date: string; // 'YYYY-MM-DD'
+  visitedAt: Date;
+  registeredStamps: number;
+  failedAttempts: number;
 }
