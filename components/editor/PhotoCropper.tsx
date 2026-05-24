@@ -89,6 +89,10 @@ export function PhotoCropper({
           // rectangle in the middle). The painted-teeth overlay then IS the
           // stamp boundary — what you see is what you get.
           objectFit="cover"
+          // Default restrictPosition=true locks panning to one axis at
+          // zoom=1 (whichever has overflow). Allow free 2-D pan so users
+          // can always reposition any part of the photo into the crop area.
+          restrictPosition={false}
           onCropChange={handleCropChange}
           onZoomChange={handleZoomChange}
           onCropComplete={handleCropComplete}

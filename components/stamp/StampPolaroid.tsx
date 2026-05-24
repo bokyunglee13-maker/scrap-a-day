@@ -8,15 +8,10 @@ import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
-import { getPerforationTeeth } from '@/lib/perforation';
 
-// Polaroid teeth deviation: PRD §03 §4.2 specified Polaroid as "no teeth"
-// (rectangular). User preference overrides — for sheet uniformity all three
-// styles now carry the same scallop signal. Uses minimal teeth (smallest)
-// so the polaroid's white frame + caption still feel distinct.
-const VB_W = 90;
-const VB_H = 120;
-const MINIMAL_TEETH = getPerforationTeeth(VB_W, VB_H, 'minimal');
+// Polaroid intentionally has NO perforation per PRD §03 §4.2 — the white
+// rectangular frame + handwritten caption is its visual signature, which
+// distinguishes it from Classic/Minimal in the sheet.
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -163,18 +158,8 @@ export function StampPolaroid({
           aria-label={`감정: ${stamp.mood}`}
         />
       )}
-
-      {/* Perforation overlay (PRD deviation per user preference) */}
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper"
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        preserveAspectRatio="none"
-      >
-        {MINIMAL_TEETH.map((t, i) => (
-          <circle key={i} cx={t.cx} cy={t.cy} r={t.r} />
-        ))}
-      </svg>
+      {/* No perforation overlay — polaroid keeps its rectangular frame
+          per PRD §03 §4.2. */}
     </div>
   );
 

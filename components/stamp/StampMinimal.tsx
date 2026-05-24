@@ -92,9 +92,10 @@ export function StampMinimal({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo region with crop transform — minimal inset, photo reaches
-          close to the perforation edge for a real-stamp look. */}
-      <div className="absolute inset-[2%] overflow-hidden">
+      {/* Photo fills the stamp body (inset-0). Same reasoning as Classic:
+          the painted-teeth overlay needs photo pixels at the edges to
+          paint over, otherwise it blends into matching-color padding. */}
+      <div className="absolute inset-0 overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
@@ -106,8 +107,8 @@ export function StampMinimal({
         />
       </div>
 
-      {/* Hairline white inner border */}
-      <div className="pointer-events-none absolute inset-[2%] border border-white/80" />
+      {/* Hairline white inner border (decorative frame inside the photo) */}
+      <div className="pointer-events-none absolute inset-[5%] border border-white/80" />
 
       {/* Date chip — top left */}
       {showDate && (

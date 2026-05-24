@@ -103,9 +103,11 @@ export function StampClassic({
       {/* Paper backdrop */}
       <div className="absolute inset-0 bg-stamp-paper" />
 
-      {/* Photo region with crop transform — small inset so photo extends
-          close to the perforation edge (real-stamp feel). */}
-      <div className="absolute inset-[3%] overflow-hidden">
+      {/* Photo fills the entire stamp body (inset-0) so the painted-teeth
+          overlay actually bites INTO the photo. Earlier inset-[3%] put the
+          photo inside a paper-colored padding, where the same-colored
+          scallops blended invisibly. */}
+      <div className="absolute inset-0 overflow-hidden">
         <img
           src={photoUrl}
           alt={buildAlt(stamp)}
@@ -117,8 +119,8 @@ export function StampClassic({
         />
       </div>
 
-      {/* Inner ink border (2px) — sits over the photo */}
-      <div className="pointer-events-none absolute inset-[3%] border-2 border-stamp-ink" />
+      {/* Inner ink border (2px) — decorative frame inside the photo */}
+      <div className="pointer-events-none absolute inset-[6%] border-2 border-stamp-ink" />
 
       {/* Wordmark + date — bottom right */}
       {showDate && (
