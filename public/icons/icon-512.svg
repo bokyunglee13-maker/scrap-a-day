@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#FBEAF0"/>
+  <rect x="96" y="64" width="320" height="384" rx="10" fill="#ffffff"/>
+  <text x="256" y="284" font-family="Georgia, 'Times New Roman', serif" font-size="192" font-weight="600" fill="#4B1528" text-anchor="middle">S</text>
+  <text x="256" y="396" font-family="Georgia, 'Times New Roman', serif" font-size="34" letter-spacing="6" fill="#4B1528" opacity="0.55" text-anchor="middle">SCRAP·A·DAY</text>
+</svg>
