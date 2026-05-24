@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR, Crimson_Pro, Caveat } from "next/font/google";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorListeners } from "@/components/ErrorListeners";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const notoSansKr = Noto_Sans_KR({
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans bg-stamp-paper text-stamp-ink">
         <ErrorListeners />
         <ErrorBoundary>{children}</ErrorBoundary>
+        <Toaster position="bottom-center" richColors closeButton />
       </body>
     </html>
   );
