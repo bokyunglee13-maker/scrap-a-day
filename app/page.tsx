@@ -51,11 +51,13 @@ export default function HomePage() {
           <MonthBoard year={year} month={month} />
         </div>
 
-        {/* "Back up your data" nudge — second mitigation for iOS ITP. */}
-        <BackupNag />
-
         {/* Monthly retrospective — empty state handled internally. */}
         <RetrospectCard year={year} month={month} />
+
+        {/* "Back up your data" nudge — moved to the bottom so the calendar
+            remains the dominant element on the page (user feedback). Still
+            renders only when null/stale; otherwise silent. */}
+        <BackupNag />
       </main>
     </>
   );
