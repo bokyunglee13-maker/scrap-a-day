@@ -15,6 +15,7 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
@@ -24,6 +25,7 @@ import {
   Palette,
   Sparkles,
   Trash2,
+  Users,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { EditMemoDialog } from '@/components/editor/EditMemoDialog';
 import { EditMoodDialog } from '@/components/editor/EditMoodDialog';
 import { EditStyleDialog } from '@/components/editor/EditStyleDialog';
+import { EditCompanionsDialog } from '@/components/editor/EditCompanionsDialog';
 import { RecropDialog } from '@/components/editor/RecropDialog';
 import { DeleteStampDialog } from '@/components/editor/DeleteStampDialog';
 import { ExportStamp } from '@/components/share/ExportStamp';
@@ -175,11 +178,15 @@ function ActionButton({ icon, label, onClick }: ActionButtonProps) {
 }
 
 function StampDetailView({ stamp }: { stamp: Stamp }) {
+  const router = useRouter();
   const [recropOpen, setRecropOpen] = useState(false);
   const [memoOpen, setMemoOpen] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [companionsOpen, setCompanionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const companions = stamp.companions ?? [];
 
   return (
     <PageShell>
@@ -198,6 +205,32 @@ function StampDetailView({ stamp }: { stamp: Stamp }) {
           <p className="max-w-prose whitespace-pre-wrap break-words text-center text-base text-stamp-ink/80">
             {stamp.memo}
           </p>
+        )}
+
+        {companions.length > 0 && (
+          <div className="flex max-w-prose flex-col items-center gap-2">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+              함께한 사람
+            </h2>
+            <ul className="flex flex-wrap justify-center gap-1.5">
+              {companions.map((name) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/search?companion=${encodeURIComponent(name)}`,
+                      )
+                    }
+                    className="rounded-full bg-stamp-ink/10 px-2 py-0.5 text-xs text-stamp-ink hover:bg-stamp-ink/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`${name} 우표 검색`}
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 
@@ -225,6 +258,11 @@ function StampDetailView({ stamp }: { stamp: Stamp }) {
           icon={<Palette className="size-4" />}
           label="스타일 변경"
           onClick={() => setStyleOpen(true)}
+        />
+        <ActionButton
+          icon={<Users className="size-4" />}
+          label="함께한 사람"
+          onClick={() => setCompanionsOpen(true)}
         />
         <ExportStamp stamp={stamp} />
         <Button
@@ -257,6 +295,11 @@ function StampDetailView({ stamp }: { stamp: Stamp }) {
       <EditStyleDialog
         open={styleOpen}
         onOpenChange={setStyleOpen}
+        stamp={stamp}
+      />
+      <EditCompanionsDialog
+        open={companionsOpen}
+        onOpenChange={setCompanionsOpen}
         stamp={stamp}
       />
       <DeleteStampDialog

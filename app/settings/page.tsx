@@ -80,6 +80,7 @@ export default function SettingsPage() {
       </header>
 
       <nav className="mt-6 divide-y divide-stamp-ink/10 rounded-sm border border-stamp-ink/10 bg-white/40">
+        <SettingsRow href="/search" label="검색" />
         <SettingsRow href="/settings/backup" label="백업" />
         <SettingsRow
           href="/settings/trash"

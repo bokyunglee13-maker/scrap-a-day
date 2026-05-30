@@ -269,6 +269,72 @@ export async function restoreStamp(id: string): Promise<Result<Stamp>> {
 }
 
 /**
+ * Filter active stamps by companion(s) and/or mood(s).
+ * - Both arrays optional. Empty arrays mean "no filter on this axis".
+ * - When both are present: AND across axes. Within an axis, OR semantics
+ *   (stamp matches if it contains ANY of the requested companions / moods).
+ * - Returns newest date first.
+ */
+export async function searchStamps(filter: {
+  companions?: string[];
+  moods?: Mood[];
+}): Promise<Result<Stamp[]>> {
+  try {
+    const all = await db.stamps.toArray();
+    const wantCompanions = filter.companions?.length
+      ? new Set(filter.companions)
+      : null;
+    const wantMoods = filter.moods?.length ? new Set(filter.moods) : null;
+
+    const matches = all.filter((s) => {
+      if (s.deletedAt !== null) return false;
+      if (wantCompanions) {
+        const stampCompanions = s.companions ?? [];
+        const hit = stampCompanions.some((c) => wantCompanions.has(c));
+        if (!hit) return false;
+      }
+      if (wantMoods) {
+        if (s.mood === null || !wantMoods.has(s.mood)) return false;
+      }
+      return true;
+    });
+
+    // Sort newest date first (string comparison is correct for yyyy-MM-dd).
+    matches.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+    return { ok: true, value: matches };
+  } catch (e) {
+    await logError('searchStamps', e, {
+      companionCount: filter.companions?.length ?? 0,
+      moodCount: filter.moods?.length ?? 0,
+    });
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
+ * All unique companion names that have ever been used in an ACTIVE stamp.
+ * Used for autocomplete in CompanionPicker and the search filter chip list.
+ */
+export async function getAllCompanions(): Promise<Result<string[]>> {
+  try {
+    const all = await db.stamps.toArray();
+    const set = new Set<string>();
+    for (const s of all) {
+      if (s.deletedAt !== null) continue;
+      for (const c of s.companions ?? []) {
+        const trimmed = c.trim();
+        if (trimmed) set.add(trimmed);
+      }
+    }
+    return { ok: true, value: Array.from(set).sort((a, b) => a.localeCompare(b, 'ko')) };
+  } catch (e) {
+    await logError('getAllCompanions', e);
+    return { ok: false, error: 'DB_ERROR' };
+  }
+}
+
+/**
  * Soft-delete: sets deletedAt to now. Stamp moves to the trash.
  * Never calls db.stamps.delete().
  */

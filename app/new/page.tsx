@@ -40,6 +40,7 @@ import { MemoInput } from '@/components/editor/MemoInput';
 import { MoodPicker } from '@/components/editor/MoodPicker';
 import { StylePicker } from '@/components/editor/StylePicker';
 import { StampPreview } from '@/components/editor/StampPreview';
+import { CompanionPicker } from '@/components/editor/CompanionPicker';
 import { validatePhotoFile } from '@/lib/photoValidation';
 import { extractCroppedBlob } from '@/lib/imageProcessing';
 import { createStamp, type StampInput } from '@/lib/stamps';
@@ -119,6 +120,7 @@ function NewStampInner() {
   const [mood, setMood] = useState<Mood | null>(null);
   const [moodVisible, setMoodVisible] = useState<boolean>(true);
   const [style, setStyle] = useState<StampStyle>('minimal');
+  const [companions, setCompanions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
 
@@ -142,7 +144,8 @@ function NewStampInner() {
     photoFile !== null ||
     memo !== '' ||
     mood !== null ||
-    style !== 'minimal';
+    style !== 'minimal' ||
+    companions.length > 0;
 
   const handleOpenCamera = () => {
     cameraInputRef.current?.click();
@@ -224,6 +227,8 @@ function NewStampInner() {
         mood,
         moodVisible,
         style,
+        // Empty array → omit so the field stays absent from storage.
+        companions: companions.length > 0 ? companions : undefined,
       };
       const result = await createStamp(input);
       if (result.ok) {
@@ -389,6 +394,13 @@ function NewStampInner() {
                 visible={moodVisible}
                 onVisibleChange={setMoodVisible}
               />
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+                함께한 사람
+              </h2>
+              <CompanionPicker value={companions} onChange={setCompanions} />
             </section>
 
             <section className="flex flex-col gap-2">
