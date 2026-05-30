@@ -384,33 +384,22 @@ function SearchInner() {
                       {stamps.length}개
                     </span>
                   </h3>
-                  {/* Inline style for aspectRatio + width + alignSelf instead
-                      of Tailwind classes — the arbitrary `aspect-[3/4]` plus
-                      grid-item default `align-self: stretch` were colliding
-                      on Samsung Internet, computing 0px cells despite the
-                      header showing the correct count. Inline style bypasses
-                      any CSS-purge / cache-staleness edge and pins the box
-                      explicitly. minHeight is a paranoid floor; if aspect-
-                      ratio fails entirely the stamp is at least visible. */}
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {/* COMPLETELY different approach from the (twice-failed)
+                      grid+full+aspect strategy. StampView at size='lg' has
+                      a hard-coded w-48 (192px) so there's no width-from-parent
+                      dependency. Two stamps fit per row inside max-w-md;
+                      flex-wrap handles the rest. flex justify-start with the
+                      stamps' own intrinsic 192px width — zero ambiguity. */}
+                  <div className="flex flex-wrap gap-4">
                     {stamps.map((s) => (
-                      <div
+                      <StampView
                         key={s.id}
-                        style={{
-                          aspectRatio: '3 / 4',
-                          width: '100%',
-                          alignSelf: 'start',
-                          minHeight: 180,
-                        }}
-                      >
-                        <StampView
-                          stamp={s}
-                          size="full"
-                          showDate
-                          showMood
-                          onClick={() => router.push(`/stamp/${s.date}`)}
-                        />
-                      </div>
+                        stamp={s}
+                        size="lg"
+                        showDate
+                        showMood
+                        onClick={() => router.push(`/stamp/${s.date}`)}
+                      />
                     ))}
                   </div>
                 </section>
