@@ -196,15 +196,16 @@ function SearchInner() {
     router.replace(qs ? `/search?${qs}` : '/search');
   };
 
+  // Single-select for both axes (per user feedback). Tapping the active
+  // chip clears it; tapping a different chip replaces the selection.
+  // Earlier the companion axis was multi-select with OR matching, which
+  // produced surprising results ("김준영 + 스폰지클럽" became "either",
+  // not "both" — confusing). Single-select removes the ambiguity entirely.
   const toggleCompanion = (name: string) => {
-    const set = new Set(selectedCompanions);
-    if (set.has(name)) set.delete(name);
-    else set.add(name);
-    navigateWith(buildParams({ companions: Array.from(set) }));
+    const next: string[] = selectedCompanions.includes(name) ? [] : [name];
+    navigateWith(buildParams({ companions: next }));
   };
 
-  // Single-select per user feedback. Tapping the active mood clears it;
-  // tapping a different mood replaces the selection.
   const toggleMood = (mood: Mood) => {
     const next: Mood[] = selectedMoods.includes(mood) ? [] : [mood];
     navigateWith(buildParams({ moods: next }));
@@ -384,18 +385,19 @@ function SearchInner() {
                       {stamps.length}개
                     </span>
                   </h3>
-                  {/* COMPLETELY different approach from the (twice-failed)
-                      grid+full+aspect strategy. StampView at size='lg' has
-                      a hard-coded w-48 (192px) so there's no width-from-parent
-                      dependency. Two stamps fit per row inside max-w-md;
-                      flex-wrap handles the rest. flex justify-start with the
-                      stamps' own intrinsic 192px width — zero ambiguity. */}
-                  <div className="flex flex-wrap gap-4">
+                  {/* size='md' (w-20 = 80px) + flex-wrap. 4 stamps per row
+                      inside max-w-md (416px inner): 80×4 + 12×3 = 356px,
+                      ~60px spare. Bigger than the calendar grid (~50px)
+                      since search is a recall tool, but small enough to
+                      see 8+ stamps in one screen for pattern spotting.
+                      gap-3 (12px) gives a touch of breathing room without
+                      the lg-grid's photo-album feel. */}
+                  <div className="flex flex-wrap gap-3">
                     {stamps.map((s) => (
                       <StampView
                         key={s.id}
                         stamp={s}
-                        size="lg"
+                        size="md"
                         showDate
                         showMood
                         onClick={() => router.push(`/stamp/${s.date}`)}
