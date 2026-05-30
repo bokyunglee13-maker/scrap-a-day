@@ -35,6 +35,13 @@ export interface Settings {
   defaultStyle: StampStyle;
   weekStart: 'monday';
   lastBackupAt: Date | null;
+  /**
+   * Special-day sticker keys the user has turned off. Strings (not the
+   * SpecialDay union) to avoid a types→lib/specialDays import cycle and
+   * to keep persisted data forward-compatible if we add new stickers.
+   * Default behavior when undefined = empty array = all stickers shown.
+   */
+  disabledSpecialDays?: string[];
 }
 
 export interface ErrorLog {

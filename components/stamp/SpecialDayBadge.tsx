@@ -1,3 +1,5 @@
+"use client";
+
 // components/stamp/SpecialDayBadge.tsx
 // Special-day decoration overlay. Each day gets a SET of stickers (a main
 // badge + accent decorations) scattered across the stamp — not just a single
@@ -8,10 +10,20 @@
 // (works at all sizes from calendar 'full' to detail 'xl'). All SVGs are
 // pointer-events-none and z-10 so they sit above the photo without
 // intercepting taps.
+//
+// User-controlled visibility (Phase 2):
+//   Each SpecialDay can be individually turned off via Settings →
+//   disabledSpecialDays[]. This component reads settings reactively (Dexie
+//   live query) and short-circuits to null when the user has disabled this
+//   day's sticker. forceShow=true bypasses the check — used by the settings
+//   preview row so users can see the sticker they're toggling.
 
 import type { ReactElement } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+
 import type { SpecialDay } from "@/lib/specialDays";
 import { SPECIAL_DAY_LABEL } from "@/lib/specialDays";
+import { getSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 interface SpecialDayBadgeProps {
@@ -23,9 +35,27 @@ interface SpecialDayBadgeProps {
    * - 'full' (lg/xl on detail page): all stickers shown at full strength.
    */
   variant?: "compact" | "full";
+  /**
+   * Bypass the user's disabled-list check. Used in the settings preview
+   * so the user sees the sticker even when they're about to toggle it off.
+   */
+  forceShow?: boolean;
 }
 
-export function SpecialDayBadge({ day, variant = "full" }: SpecialDayBadgeProps) {
+export function SpecialDayBadge({
+  day,
+  variant = "full",
+  forceShow = false,
+}: SpecialDayBadgeProps) {
+  // Reactive read — re-renders when the user toggles a sticker in settings.
+  const settingsResult = useLiveQuery(() => getSettings(), []);
+  const isDisabled =
+    !forceShow &&
+    settingsResult?.ok === true &&
+    Array.isArray(settingsResult.value.disabledSpecialDays) &&
+    settingsResult.value.disabledSpecialDays.includes(day);
+  if (isDisabled) return null;
+
   const stickers = variant === "compact" ? COMPACT[day] : FULL[day];
   return (
     <div
@@ -217,28 +247,48 @@ const BALLOON_RED = balloon("#E63946", "#7A0D1F");
 const BALLOON_YELLOW = balloon("#FAC775", "#8A6320");
 const BALLOON_BLUE = balloon("#B5D4F4", "#4A7BA8");
 
-/** Carnation — used by 어버이날 (red) and 스승의 날 (pink). */
-function carnation(fill: string, stroke: string): ReactElement {
+/** Carnation — used by 어버이날 (red) and 스승의 날 (pink).
+ *  Redesigned to feel like a real top-down carnation: round, ruffled
+ *  cluster of petals with a small dark center, on a short stem.
+ *  User feedback: the previous fan-shape didn't read as a carnation. */
+function carnation(fill: string, stroke: string, accent: string): ReactElement {
   return (
-    <svg viewBox="0 0 20 22" className="h-full w-full drop-shadow-sm">
-      {/* flower petals — overlapping triangular fan */}
+    <svg viewBox="0 0 24 28" className="h-full w-full drop-shadow-sm">
+      {/* outer ruffled cluster — large base ellipse */}
+      <ellipse cx="12" cy="11" rx="10" ry="8.5" fill={fill} />
+      {/* layered round petals giving the 'ruffled bouquet' feel */}
+      <circle cx="6" cy="10" r="4.2" fill={fill} stroke={stroke} strokeWidth="0.35" />
+      <circle cx="18" cy="10" r="4.2" fill={fill} stroke={stroke} strokeWidth="0.35" />
+      <circle cx="9" cy="6" r="3.8" fill={fill} stroke={stroke} strokeWidth="0.35" />
+      <circle cx="15" cy="6" r="3.8" fill={fill} stroke={stroke} strokeWidth="0.35" />
+      <circle cx="12" cy="14" r="4.3" fill={fill} stroke={stroke} strokeWidth="0.35" />
+      <circle cx="7" cy="14" r="3.5" fill={fill} stroke={stroke} strokeWidth="0.3" />
+      <circle cx="17" cy="14" r="3.5" fill={fill} stroke={stroke} strokeWidth="0.3" />
+      {/* inner highlight petals — slightly darker accent for depth */}
+      <circle cx="10" cy="10" r="2.5" fill={accent} opacity="0.55" />
+      <circle cx="14" cy="10" r="2.5" fill={accent} opacity="0.55" />
+      {/* dark center */}
+      <circle cx="12" cy="10.5" r="1.5" fill={stroke} opacity="0.8" />
+      {/* small petal-edge highlights (white) for the ruffled top */}
       <path
-        d="M 10 2 Q 6 5 5 9 Q 4 12 7 13 Q 5 10 8 8 Q 9 7 10 6 Q 11 7 12 8 Q 15 10 13 13 Q 16 12 15 9 Q 14 5 10 2 Z"
-        fill={fill}
-        stroke={stroke}
+        d="M 4 8 Q 6 6 8 8 M 16 8 Q 18 6 20 8 M 9 4 Q 11 3 13 4 M 14 4 Q 16 3 18 4"
+        fill="none"
+        stroke="#ffffff"
         strokeWidth="0.4"
+        opacity="0.6"
+        strokeLinecap="round"
       />
-      <circle cx="10" cy="10" r="1.5" fill={stroke} opacity="0.6" />
       {/* stem */}
-      <path d="M 10 13 L 10 21" stroke="#7A8F4C" strokeWidth="0.7" />
-      {/* leaves */}
-      <path d="M 10 16 Q 7 17 6 19" fill="none" stroke="#7A8F4C" strokeWidth="0.7" />
-      <path d="M 10 18 Q 13 19 14 21" fill="none" stroke="#7A8F4C" strokeWidth="0.7" />
+      <path d="M 12 18 L 12 27" stroke="#5C7C2C" strokeWidth="1.2" strokeLinecap="round" />
+      {/* leaves — pointed ovals */}
+      <ellipse cx="9" cy="22" rx="2.5" ry="1" fill="#5C7C2C" transform="rotate(-30 9 22)" />
+      <ellipse cx="15" cy="24" rx="2.5" ry="1" fill="#5C7C2C" transform="rotate(30 15 24)" />
     </svg>
   );
 }
-const CARNATION_RED = carnation("#E63946", "#7A0D1F");
-const CARNATION_PINK = carnation("#F4C0D1", "#C8829D");
+// fill / stroke (darker outline) / accent (slightly darker interior shading)
+const CARNATION_RED = carnation("#E63946", "#7A0D1F", "#B82835");
+const CARNATION_PINK = carnation("#F4A8C1", "#C8829D", "#D88AA8");
 
 /** Lotus lantern for 부처님 오신날. Hanging from a small chain. */
 const LOTUS_LANTERN = (
@@ -435,12 +485,12 @@ const FULL: Record<SpecialDay, StickerSpec[]> = {
     { svg: STAR_GOLD, className: "left-[6%] bottom-[10%] w-[14%]" },
   ],
   "parents-day": [
-    { svg: CARNATION_RED, className: "right-[5%] top-[5%] w-[28%] aspect-[20/22]" },
-    { svg: CARNATION_PINK, className: "left-[7%] bottom-[8%] w-[20%] aspect-[20/22]" },
+    { svg: CARNATION_RED, className: "right-[5%] top-[5%] w-[28%] aspect-[24/28]" },
+    { svg: CARNATION_PINK, className: "left-[7%] bottom-[8%] w-[20%] aspect-[24/28]" },
   ],
   "teachers-day": [
-    { svg: CARNATION_PINK, className: "right-[5%] top-[5%] w-[28%] aspect-[20/22]" },
-    { svg: CARNATION_PINK, className: "left-[8%] bottom-[10%] w-[18%] aspect-[20/22]" },
+    { svg: CARNATION_PINK, className: "right-[5%] top-[5%] w-[28%] aspect-[24/28]" },
+    { svg: CARNATION_PINK, className: "left-[8%] bottom-[10%] w-[18%] aspect-[24/28]" },
   ],
   "buddha-birthday": [
     { svg: LOTUS_LANTERN, className: "right-[5%] top-[3%] w-[22%] aspect-[20/24]" },
@@ -452,7 +502,7 @@ const FULL: Record<SpecialDay, StickerSpec[]> = {
     { svg: BAT, className: "right-[40%] top-[15%] w-[14%] aspect-[20/12]" },
   ],
   christmas: [
-    { svg: CHRISTMAS_TREE, className: "right-[5%] top-[5%] w-[26%] aspect-[20/22]" },
+    { svg: CHRISTMAS_TREE, className: "right-[5%] top-[5%] w-[26%] aspect-[24/28]" },
     { svg: GIFT, className: "left-[7%] bottom-[8%] w-[20%] aspect-square" },
     { svg: STAR_GOLD, className: "left-[40%] top-[10%] w-[10%]" },
   ],
@@ -504,10 +554,10 @@ const COMPACT: Record<SpecialDay, StickerSpec[]> = {
     { svg: BALLOON_YELLOW, className: "right-[28%] top-[5%] w-[20%] aspect-[8/11]" },
   ],
   "parents-day": [
-    { svg: CARNATION_RED, className: "right-[5%] top-[5%] w-[32%] aspect-[20/22]" },
+    { svg: CARNATION_RED, className: "right-[5%] top-[5%] w-[32%] aspect-[24/28]" },
   ],
   "teachers-day": [
-    { svg: CARNATION_PINK, className: "right-[5%] top-[5%] w-[32%] aspect-[20/22]" },
+    { svg: CARNATION_PINK, className: "right-[5%] top-[5%] w-[32%] aspect-[24/28]" },
   ],
   "buddha-birthday": [
     { svg: LOTUS_LANTERN, className: "right-[5%] top-[5%] w-[26%] aspect-[20/24]" },
@@ -516,7 +566,7 @@ const COMPACT: Record<SpecialDay, StickerSpec[]> = {
     { svg: PUMPKIN, className: "right-[5%] bottom-[8%] w-[36%] aspect-[22/20]" },
   ],
   christmas: [
-    { svg: CHRISTMAS_TREE, className: "right-[5%] top-[5%] w-[32%] aspect-[20/22]" },
+    { svg: CHRISTMAS_TREE, className: "right-[5%] top-[5%] w-[32%] aspect-[24/28]" },
   ],
   samiljeol: [
     { svg: TAEGEUKGI, className: "right-[5%] top-[5%] w-[36%] aspect-[24/16]" },

@@ -114,6 +114,15 @@ export default function SettingsPage() {
         )}
 
         <SettingsRow href="/search" label="검색" />
+        <SettingsRow
+          href="/settings/stickers"
+          label="특별한 날 스티커"
+          trailing={
+            <span className="font-sans text-xs text-stamp-ink/40">
+              17개
+            </span>
+          }
+        />
         <SettingsRow href="/settings/backup" label="백업" />
         <SettingsRow
           href="/settings/trash"

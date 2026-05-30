@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: Settings = {
   defaultStyle: "minimal",
   weekStart: "monday",
   lastBackupAt: null,
+  disabledSpecialDays: [],
 };
 
 /**
