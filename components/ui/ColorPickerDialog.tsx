@@ -56,7 +56,10 @@ export function ColorPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      {/* Width pinned to viewport minus 2rem of side padding so the dialog
+          never bleeds past the screen on narrow phones. Picker inside
+          inherits this width via max-width: 100% in globals.css. */}
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>색상 선택</DialogTitle>
         </DialogHeader>

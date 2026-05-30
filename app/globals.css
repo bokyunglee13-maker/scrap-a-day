@@ -128,10 +128,21 @@
 
 /* react-colorful customization — pastel pointer + slim layout for mobile.
    The library uses pseudo-element pointers; override via .react-colorful
-   class selectors as documented in its README. */
+   class selectors as documented in its README.
+   max-width:100% + box-sizing keep the picker inside its container even
+   when the dialog tightens — the bug was that the default width: 200px
+   ignored the parent and bled past the dialog edge on narrow phones. */
 .react-colorful {
   width: 100% !important;
+  max-width: 100% !important;
   height: 240px !important;
+  box-sizing: border-box;
+}
+.react-colorful__saturation,
+.react-colorful__hue {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .react-colorful__saturation {
   border-radius: 8px 8px 0 0;

@@ -172,7 +172,11 @@ export default function BackgroundSettingsPage() {
   };
 
   return (
-    <main className="mx-auto max-w-md px-4 py-6">
+    // overflow-x-hidden traps any rogue overflow before it triggers
+    // horizontal scroll on the page. min-w-0 on each section is also a
+    // belt-and-braces measure for flex children that have intrinsic
+    // content wider than their cell.
+    <main className="mx-auto w-full max-w-md overflow-x-hidden px-4 py-6">
       <header className="flex items-center gap-2">
         <Link
           href="/settings"
@@ -191,7 +195,7 @@ export default function BackgroundSettingsPage() {
           불러오는 중…
         </p>
       ) : (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-4 flex w-full min-w-0 flex-col gap-3">
           {/* Compact inline preview (stamp + hex side-by-side). */}
           <Preview color={color} />
 
