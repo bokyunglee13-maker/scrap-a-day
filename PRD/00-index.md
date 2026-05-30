@@ -3,6 +3,13 @@
 > 이 파일은 PRD의 **라우터**입니다. 전체 PRD를 한꺼번에 읽지 마세요.
 > 작업 Phase에 맞는 파일만 로드하세요.
 
+> 📌 **PRD 외 핵심 문서** (루트):
+> - `../CLAUDE.md` — 프로젝트 메인 라우터
+> - `../memory.md` — 세션 메모리 (현재 진행 상태, 결정 이력, TIL)
+> - `../design.md` — 디자인 시스템 통합 cheat sheet (색상/타이포/우표 size)
+> - `../ROADMAP.md` — 전체 작업 분해 (Phase별 체크리스트)
+> - `../docs/decisions/` — ADR 0001~0006
+
 ---
 
 ## 📁 파일 구조
@@ -117,6 +124,35 @@
 - `09-data-model.md` (자동 정리 규칙)
 
 **무시**: 04, 05, 06
+
+---
+
+### Phase 6: Supabase 클라우드 sync + Magic Link 인증
+
+**필독**:
+- `01-overview.md` (특히 §Non-goals — ADR 0006으로 "클라우드 서비스가 아니다" 변경된 부분)
+- `../docs/decisions/0006-cloud-sync.md` (ADR — LWW, RLS, anon key 정책)
+- `../docs/decisions/0004-local-only-storage.md` (부분 Superseded 표기 확인)
+
+**참조용**:
+- `02-tech-stack.md` (Supabase 클라이언트 추가)
+- `09-data-model.md` (IndexedDB 스키마는 그대로, Supabase 테이블은 `docs/supabase-schema.sql`)
+- `../docs/supabase-setup.md` (사용자 1회성 셋업 가이드)
+- `15-mobile-first.md` §15.5 (Phase 6이 iOS ITP의 근본적 완화)
+
+**Phase 6 구현 영역** (`memory.md` §1 참조):
+- `lib/supabase.ts` — PKCE flow client 싱글톤
+- `lib/sync.ts` — stamps + settings 양방향 sync (LWW, watermark)
+- `lib/photoStorage.ts` — Storage 업/다운로드
+- `hooks/useUser.ts`, `hooks/useAutoSync.ts` — auth 상태 + 자동 sync
+- `app/auth/login`, `app/auth/callback`, `app/settings/account` — 인증 UI
+
+**🚨 절대 규칙**:
+- `service_role` 키 절대 frontend 노출 X (anon key만, RLS 보호)
+- 모든 CRUD가 여전히 IndexedDB 먼저 (local-first 유지)
+- 로그아웃 사용자는 sync 완전 no-op (네트워크 호출 0)
+
+**무시**: 04, 05 (UI 변경 없음 — sync는 배경 작업)
 
 ---
 
