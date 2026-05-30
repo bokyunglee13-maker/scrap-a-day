@@ -1,42 +1,33 @@
 "use client";
 
 // components/share/ExportMonth.tsx
-// Phase 5 — Export the current month's calendar board as a single PNG, then
-// hand off to Web Share API (mobile = Instagram / KakaoTalk / etc. via system
-// share sheet) or trigger a download (desktop).
+// Phase 6 — Export the current month as a PNG with a dedicated poster-style
+// layout (MonthExportLayout). Then hand off to Web Share API (mobile = Insta /
+// KakaoTalk / etc. via system share sheet) or trigger a download (desktop).
 //
-// Why the failure mode mattered for the user:
-// The board is heavy — 30+ stamps each with a blob: <img>, painted-teeth SVG
-// overlay, and (sometimes) special-day stickers. iOS Safari's foreignObject
-// pipeline can choke on this volume. The fixes below are practical
-// mitigations that have been documented to help, in priority order:
-//
-//   1. Preload every <img> in the target subtree so html-to-image doesn't
-//      see partially-loaded textures.
-//   2. Don't pass cacheBust=true for blob: URLs — appending ?t= breaks them.
-//   3. skipFonts=true — we already use next/font system-injected fonts; the
-//      embedder doesn't need to inline them, and trying often errors out on
-//      cross-origin Google Fonts CSS fetches.
-//   4. On error, include the actual message in the toast so the user can tell
-//      us what's wrong (was a generic '잠시 후 다시 시도해주세요' before).
+// Why mount-on-demand instead of always-present offscreen replica:
+// Each stamp creates a blob: URL for its photo. Keeping a full offscreen
+// duplicate of the month doubles memory (~15MB for 30 stamps with originals).
+// Mount only while exporting; useEffect waits for images to load before
+// calling toPng.
 
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 
+import { MonthExportLayout } from "./MonthExportLayout";
+
 const STAMP_PAPER = "#fbeaf0";
 
 interface ExportMonthProps {
-  targetRef: RefObject<HTMLElement | null>;
   year: number;
   month: number; // 1-12
 }
 
 /**
- * Wait until every <img> inside `root` reports complete + naturalWidth > 0.
- * Resolves immediately for already-loaded images. Bounded by a 5s timeout per
- * image so a single broken src can't hang the whole export.
+ * Wait for every <img> in `root` to either load or fail. 5-second per-image
+ * safety so a broken src can't hang the export.
  */
 async function waitForImages(root: HTMLElement): Promise<void> {
   const imgs = Array.from(root.querySelectorAll("img"));
@@ -55,7 +46,6 @@ async function waitForImages(root: HTMLElement): Promise<void> {
         };
         img.addEventListener("load", done, { once: true });
         img.addEventListener("error", done, { once: true });
-        // Per-image safety timeout — a broken image shouldn't hang the export.
         window.setTimeout(done, 5000);
       }),
   );
@@ -80,11 +70,11 @@ async function shareOrDownload(
           return true;
         } catch (e) {
           if (e instanceof Error && e.name === "AbortError") return true;
-          // Any other share failure falls through to download.
+          // Fall through to download.
         }
       }
     } catch {
-      // Fall through to download below.
+      // Fall through.
     }
   }
 
@@ -101,59 +91,85 @@ async function shareOrDownload(
   }
 }
 
-export function ExportMonth({ targetRef, year, month }: ExportMonthProps) {
+export function ExportMonth({ year, month }: ExportMonthProps) {
+  const offscreenRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  const handleExport = async () => {
-    const node = targetRef.current;
-    if (!node) {
-      toast.error("저장할 영역을 찾을 수 없어요");
-      return;
-    }
-    setExporting(true);
-    try {
-      // 1) Preload all blob: <img>s so html-to-image doesn't snapshot
-      //    half-loaded textures.
-      await waitForImages(node);
+  // When `exporting` flips true, the offscreen layout mounts; this effect
+  // then waits for images and runs toPng, then cleans up.
+  useEffect(() => {
+    if (!exporting) return;
+    let cancelled = false;
 
-      // 2) Serialize. cacheBust removed (breaks blob: URLs). skipFonts true —
-      //    next/font fonts are already in the page, no need to re-embed.
-      const dataUrl = await toPng(node, {
-        pixelRatio: 2,
-        backgroundColor: STAMP_PAPER,
-        skipFonts: true,
-      });
-
-      const mm = String(month).padStart(2, "0");
-      const filename = `scrap-a-day-${year}-${mm}.png`;
-      const ok = await shareOrDownload(dataUrl, filename);
-      if (ok) {
-        toast.success("이미지를 저장했어요");
-      } else {
-        toast.error("다운로드를 시작할 수 없어요. 브라우저 팝업을 허용해주세요.");
+    void (async () => {
+      // Give React a frame to commit the offscreen mount.
+      await new Promise((r) => requestAnimationFrame(() => r(undefined)));
+      if (cancelled || !offscreenRef.current) {
+        setExporting(false);
+        return;
       }
-    } catch (e) {
-      // Surface the actual error so the user can tell us what failed —
-      // the previous generic message hid the real cause (CORS / memory /
-      // foreignObject / etc.).
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`이미지 저장에 실패했어요: ${msg.slice(0, 80)}`);
-      // eslint-disable-next-line no-console
-      console.error("ExportMonth toPng failed:", e);
-    } finally {
-      setExporting(false);
-    }
-  };
+      try {
+        await waitForImages(offscreenRef.current);
+        if (cancelled) return;
+        const dataUrl = await toPng(offscreenRef.current, {
+          pixelRatio: 2,
+          backgroundColor: STAMP_PAPER,
+          skipFonts: true,
+        });
+        const mm = String(month).padStart(2, "0");
+        const filename = `scrap-a-day-${year}-${mm}.png`;
+        const ok = await shareOrDownload(dataUrl, filename);
+        if (cancelled) return;
+        if (ok) {
+          toast.success("이미지를 저장했어요");
+        } else {
+          toast.error("다운로드가 차단됐어요. 팝업을 허용해주세요.");
+        }
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error(`이미지 저장 실패: ${msg.slice(0, 80)}`);
+        // eslint-disable-next-line no-console
+        console.error("ExportMonth toPng failed:", e);
+      } finally {
+        if (!cancelled) setExporting(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exporting, year, month]);
 
   return (
-    <button
-      type="button"
-      onClick={handleExport}
-      disabled={exporting}
-      aria-label="이 달 이미지 저장"
-      className="inline-flex size-11 items-center justify-center rounded-sm p-2 text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-    >
-      <Download className="size-5" />
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setExporting(true)}
+        disabled={exporting}
+        aria-label="이 달 이미지 저장"
+        className="inline-flex size-11 items-center justify-center rounded-sm p-2 text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      >
+        <Download className="size-5" />
+      </button>
+
+      {/* Mount the offscreen export replica only while exporting. Saves the
+          ~15MB blob URL memory cost during normal browsing. */}
+      {exporting && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: "-9999px",
+            top: 0,
+            pointerEvents: "none",
+          }}
+        >
+          <div ref={offscreenRef}>
+            <MonthExportLayout year={year} month={month} />
+          </div>
+        </div>
+      )}
+    </>
   );
 }

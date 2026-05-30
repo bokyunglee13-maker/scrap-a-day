@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useCurrentMonth } from "@/hooks/useCurrentMonth";
 import { recordDailyVisit } from "@/lib/usage";
 import { cleanExpiredTrash } from "@/lib/trash";
@@ -13,9 +13,6 @@ import { ExportMonth } from "@/components/share/ExportMonth";
 
 export default function HomePage() {
   const { year, month, goPrev, goNext, goToday, isCurrent } = useCurrentMonth();
-
-  // Ref to the calendar board DOM node for one-tap month PNG export.
-  const boardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // App-load housekeeping (fire-and-forget):
@@ -42,12 +39,13 @@ export default function HomePage() {
               isCurrent={isCurrent}
             />
           </div>
-          {/* Side-by-side with the settings cog (which lives inside MonthHeader). */}
-          <ExportMonth targetRef={boardRef} year={year} month={month} />
+          {/* Side-by-side with the settings cog (which lives inside MonthHeader).
+              ExportMonth no longer needs a targetRef — it mounts its own
+              poster-style layout (MonthExportLayout) offscreen for export. */}
+          <ExportMonth year={year} month={month} />
         </div>
 
-        {/* Wrap the board in a ref-able div so ExportMonth has a real node. */}
-        <div ref={boardRef} className="mt-6 bg-stamp-paper">
+        <div className="mt-6">
           <MonthBoard year={year} month={month} />
         </div>
 
