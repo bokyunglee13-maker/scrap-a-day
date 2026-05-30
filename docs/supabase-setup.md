@@ -2,6 +2,12 @@
 
 Phase 6 cloud sync를 위한 1회성 설정. 약 10-15분.
 
+> ℹ️ **보안 메모**: 이 가이드의 `NEXT_PUBLIC_SUPABASE_ANON_KEY`는 본인 프로젝트의 anon (public) key입니다.
+> Supabase 설계상 anon key는 frontend 코드에 노출되어도 안전합니다 — RLS (Row-Level Security)
+> 정책이 모든 테이블/Storage에 적용되어 `auth.uid() = user_id`인 로우만 접근 가능하기 때문입니다.
+> **절대 `service_role` 키는 frontend에 노출하지 마세요** (RLS 우회 가능).
+> 만약 이 문서를 fork해서 다른 프로젝트에 적용한다면 본인 키로 교체하세요.
+
 ---
 
 ## 1. SQL 스키마 실행 (3분)

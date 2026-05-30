@@ -38,15 +38,18 @@ export default function AboutPage() {
 
       <section className="mt-8 rounded-sm border border-stamp-ink/10 bg-white/40 p-4 text-center">
         <p className="font-sans text-sm text-stamp-ink/70">
-          데이터는 모두 이 기기에 저장됩니다.
+          데이터는 이 기기에 먼저 저장됩니다.
           <br />
-          외부 서버로 전송되지 않습니다.
+          로그인하면 본인 계정으로 안전하게 백업돼요.
+        </p>
+        <p className="mt-2 font-sans text-xs text-stamp-ink/50">
+          외부 분석/추적 도구는 사용하지 않아요.
         </p>
       </section>
 
       <section className="mt-6 text-center">
         <a
-          href="https://github.com"
+          href="https://github.com/bokyunglee13-maker/scrap-a-day"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex h-11 items-center justify-center font-sans text-sm text-stamp-ink/60 underline underline-offset-4 hover:text-stamp-ink"

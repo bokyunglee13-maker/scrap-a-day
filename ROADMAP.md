@@ -4,6 +4,22 @@
 
 ---
 
+## 🏁 진행 상태 (2026-05-30 기준)
+
+| Phase | 상태 | 완료일 |
+|---|---|---|
+| 1: 셋업 + 우표 컴포넌트 | ✅ 완료 | |
+| 2: IndexedDB + 캘린더 | ✅ 완료 | |
+| 3: 등록 플로우 (크롭) | ✅ 완료 | |
+| 4: 상세 + 수정 + 삭제 | ✅ 완료 | |
+| 5: 휴지통 + 백업 + PWA + 회고 + 관측 + ADR | ✅ 완료 | |
+| **6**: Supabase 클라우드 sync + magic link 인증 | ✅ 완료 | 2026-05-30 |
+| MVP 검증 (본인 사용 1개월) | 🚧 진행 예정 | |
+
+> Phase 6은 ADR 0004 (local-only) 사용 후 발견된 "다른 브라우저에서 데이터 안 보임" 문제 해결 위해 추가됨. ADR 0006 참조.
+
+---
+
 ## 📍 작업 원칙
 
 1. **각 Phase는 독립적으로 동작 가능**해야 함 (다음 단계로 못 넘어가도 뭔가는 보임)
@@ -250,7 +266,43 @@
 
 ---
 
-## 🎯 MVP 검증 (Phase 5 이후)
+## Phase 6: 클라우드 동기화 (Supabase + Magic Link)
+
+> **목표**: 다른 브라우저/기기에서 같은 데이터 접근. ADR 0004 (local-only) 한계 해결. ADR 0006 기반.
+
+### 6.1 Supabase 셋업
+- [x] 프로젝트 생성, SQL 스키마 실행 (`docs/supabase-schema.sql`)
+- [x] `stamps` + `settings` 테이블 + `stamp-photos` Storage bucket
+- [x] RLS 정책: `auth.uid() = user_id` (모든 테이블/Storage)
+- [x] Auth URL Configuration (Site URL + Redirect URLs)
+- [x] 환경변수 (`.env.local` + Vercel)
+
+### 6.2 인증 UI (Magic Link)
+- [x] `lib/supabase.ts` - PKCE flow client 싱글톤
+- [x] `hooks/useUser.ts` - 세션 상태 + onAuthStateChange
+- [x] `app/auth/login/page.tsx` - 이메일 입력 → signInWithOtp
+- [x] `app/auth/callback/page.tsx` - 콜백 처리
+- [x] `app/settings/account/page.tsx` - 계정 + 수동 sync + 로그아웃
+
+### 6.3 동기화 레이어
+- [x] `lib/photoStorage.ts` - Storage 업/다운로드
+- [x] `lib/sync.ts` - stamps 양방향 sync (LWW), settings sync, watermark
+- [x] `syncAll()` - stamps + settings 묶음 호출
+
+### 6.4 자동 동기화
+- [x] `hooks/useAutoSync.ts` - 마운트 + Dexie hook (2초 debounce)
+- [x] `app/page.tsx` mount + 첫-sync 토스트 + reconnection (`window 'online'`)
+
+### 6.5 문서
+- [x] `docs/decisions/0006-cloud-sync.md` - ADR
+- [x] `docs/decisions/0004-local-only-storage.md` - 부분 Superseded 표기
+- [x] `docs/supabase-setup.md` - 사용자 가이드 (1회성)
+
+**✅ Phase 6 완료 기준**: 한 기기에서 등록한 우표가 다른 기기/브라우저로 로그인 시 자동으로 채워짐. 첫-sync 토스트로 사용자 안심.
+
+---
+
+## 🎯 MVP 검증 (Phase 6 이후)
 
 ### 본인 사용 검증 (최소 1개월)
 - [ ] 매일 우표 붙이기 — 부담감 없이?
@@ -265,21 +317,31 @@
 
 ---
 
-## 🚀 v1.1 (MVP 완료 후 1-2개월 뒤)
+## 🚀 v1.1 (MVP 검증 1개월 후)
 
-- [ ] 검색 기능 (메모 텍스트)
+### 기능
+- [ ] 검색 기능 (메모 텍스트) — *부분 구현됨, 평가 후 확장 결정*
 - [ ] 감정별 필터
 - [ ] 월 점프 (특정 년/월로 바로 이동)
 - [ ] JSON 가져오기 (복원)
 - [ ] 상세 월말 회고 화면 (감정 차트, 요일별 패턴 등)
 - [ ] 다크모드
 
+### Phase 6 후속 폴리시 (audit 발견)
+- [ ] **영구 삭제 → Supabase Storage 사진 정리** — 현재 휴지통 자동 만료 / 사용자 영구 삭제 시 DB row만 정리, Storage 객체는 orphan으로 남음. `lib/sync.ts` TODO 5.B 참조. 무료 500MB 한계 도달 전까진 여유.
+- [ ] **Settings sync에 `updatedAt` 추가** — 현재 `localUpdated = new Date()` 우회책으로 1초 윈도우 비교 (`lib/sync.ts:355`). `settings` 테이블에 `updatedAt` 컬럼 추가해서 정확한 LWW로 전환.
+- [ ] **LWW silent loss 사용자 안내** — 두 기기 동시 수정 시 늦게 push한 쪽 조용히 덮어씀 (ADR 0006 인지·수용). 본인 사용 1개월 후 실제 발생 빈도 보고 결정.
+- [ ] **PWA 아이콘 PNG fallback** — 현재 모두 SVG. iOS 일부 환경 호환.
+- [ ] **sw.js의 GA 도메인 매처 dead code 정리** — serwist 기본 포함, 우리는 사용 안 함.
+
+### 인프라
+- [ ] **URL 변경 검토** — `scrap-a-day-eosin.vercel.app` → 더 깔끔한 이름. Vercel 프로젝트 rename + Supabase Auth URL 재설정 필요.
+
 ## 🌐 v2.0 (사용 정착 후)
 
-- [ ] Supabase 도입 + 옵션 로그인
-- [ ] 클라우드 백업 동기화
 - [ ] 링크 공유 (읽기 전용 페이지)
 - [ ] 다국어 (영어)
+- [ ] 우표 디자인 스킨 추가 (계절/이벤트)
 
 ---
 
