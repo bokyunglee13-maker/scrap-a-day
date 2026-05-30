@@ -25,6 +25,7 @@ import { ChevronLeft } from 'lucide-react';
 
 import { Stamp as StampView } from '@/components/stamp/Stamp';
 import { ExportSearch } from '@/components/share/ExportSearch';
+import { SearchStats } from '@/components/search/SearchStats';
 import { db } from '@/lib/db';
 import { moodLabel } from '@/lib/retrospect';
 import {
@@ -357,6 +358,15 @@ function SearchInner() {
             <p className="mb-4 text-sm text-stamp-ink/60">
               {results.length}개 · {RANGE_PRESET_LABEL[range]}
             </p>
+            {/* Stats card sits above the monthly groups. Renders nothing
+                when results < 2 or when the filter combo yields no
+                meaningful axis (defensive — caller already gates on
+                hasAnyFilter via the surrounding `results.length > 0`). */}
+            <SearchStats
+              stamps={results}
+              selectedCompanions={selectedCompanions}
+              selectedMoods={selectedMoods}
+            />
             {groupedResults.map(([ym, stamps], idx) => {
               const [yearStr, monthStr] = ym.split('-');
               const year = Number(yearStr);
