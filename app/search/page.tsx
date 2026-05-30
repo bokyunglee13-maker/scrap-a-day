@@ -374,13 +374,25 @@ function SearchInner() {
                       {stamps.length}개
                     </span>
                   </h3>
-                  {/* div + div instead of ul/li — ul list-style was likely
-                      what made some WebViews delay grid-track layout until
-                      after the aspect-ratio resolved (resulting in 0px
-                      cells). Plain div grid is robust everywhere. */}
+                  {/* Inline style for aspectRatio + width + alignSelf instead
+                      of Tailwind classes — the arbitrary `aspect-[3/4]` plus
+                      grid-item default `align-self: stretch` were colliding
+                      on Samsung Internet, computing 0px cells despite the
+                      header showing the correct count. Inline style bypasses
+                      any CSS-purge / cache-staleness edge and pins the box
+                      explicitly. minHeight is a paranoid floor; if aspect-
+                      ratio fails entirely the stamp is at least visible. */}
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     {stamps.map((s) => (
-                      <div key={s.id} className="aspect-[3/4] w-full">
+                      <div
+                        key={s.id}
+                        style={{
+                          aspectRatio: '3 / 4',
+                          width: '100%',
+                          alignSelf: 'start',
+                          minHeight: 180,
+                        }}
+                      >
                         <StampView
                           stamp={s}
                           size="full"
