@@ -53,7 +53,7 @@
 
 ### 1.3 디자인 시스템
 - [ ] `app/globals.css`의 `@theme` 블록에 컬러 토큰 추가 (감정 5색, 우표 컬러) — Tailwind v4 CSS-first
-- [ ] `app/layout.tsx`에 next/font로 폰트 로드 (Paperlogy via local, Crimson Pro, Caveat)
+- [ ] `app/layout.tsx`에 next/font로 폰트 로드 (Paperlogy via local — 단일 폰트 정책. 초기 설계엔 Crimson Pro + Caveat도 포함되었으나 Phase 6 후 사용자 일관성 선호로 Paperlogy로 통합. PRD/02-tech-stack.md 참조)
 - [ ] `globals.css`에 베이스 스타일
 
 ### 1.4 우표 컴포넌트 (정적 데이터로)

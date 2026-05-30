@@ -41,11 +41,11 @@
 
 ## 폰트
 
-- **한국어**: **Paperlogy** (코오롱인더스트리, 무료, self-hosted via `next/font/local`). Phase 6에서 Noto Sans KR에서 교체 (사용자 선호). weight 3종 (400/500/700) 로드.
-- **영어 날짜/숫자**: Crimson Pro (serif, Google Fonts)
-- **손글씨 캡션 (폴라로이드)**: Caveat (영문) — 한글 손글씨는 v1.1에서 검토
+- **단일 폰트**: **Paperlogy** (코오롱인더스트리, 무료, self-hosted via `next/font/local`). weight 3종 (400/500/700) 로드.
 
-`next/font`로 로드. `app/layout.tsx`에서 CSS 변수로 노출.
+> 📌 **이력 (2026-05-30 정리)**: 초기에는 한국어(Paperlogy) + 영어 serif(Crimson Pro) + 손글씨(Caveat) 3종으로 설계했으나, 사용자가 앱 전체 단일 폰트 일관성을 선호해 Paperlogy로 통합. `globals.css`의 `@theme`에서 `--font-serif`와 `--font-handwriting`도 Paperlogy로 alias되어 기존 `font-serif` / `font-handwriting` 클래스가 모두 Paperlogy로 렌더됨. Google Fonts import는 제거되어 첫 페인트 ~150-200KB 절약.
+
+`next/font/local`로 로드. `app/layout.tsx`에서 `--font-paperlogy` CSS 변수로 노출.
 
 ---
 
@@ -76,10 +76,10 @@ Tailwind v4는 `tailwind.config.ts`가 없습니다. `app/globals.css` 상단에
   --color-stamp-paper: #FBEAF0;   /* 우표 배경 */
   --color-stamp-ink: #4B1528;     /* 클래식 잉크 */
 
-  /* 폰트 (next/font 변수 연결) */
+  /* 폰트 — Paperlogy 단일. font-serif/font-handwriting 기존 클래스도 같은 폰트로 alias. */
   --font-sans: var(--font-paperlogy), sans-serif;
-  --font-serif: var(--font-crimson), serif;
-  --font-handwriting: var(--font-caveat), cursive;
+  --font-serif: var(--font-paperlogy), sans-serif;
+  --font-handwriting: var(--font-paperlogy), sans-serif;
 }
 ```
 
