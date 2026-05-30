@@ -17,11 +17,11 @@
 // Dexie reads, which is the bug fix for #2/#3 (results / known-companions
 // not updating after a write).
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Stamp as StampView } from '@/components/stamp/Stamp';
 import { ExportSearch } from '@/components/share/ExportSearch';
@@ -171,6 +171,37 @@ function SearchInner() {
     }
     return Array.from(map.entries());
   }, [results]);
+
+  // Month collapse state — only the newest month is expanded by default.
+  // Lets long searches (multi-month, hundreds of stamps) stay scannable.
+  // Stored as a Set of 'YYYY-MM' strings. Key resets when the filter
+  // changes (groupedResults identity changes → useEffect re-seeds).
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
+  useEffect(() => {
+    if (groupedResults.length === 0) {
+      setExpandedMonths(new Set());
+      return;
+    }
+    // Auto-expand: just the most recent month when results > 2 months.
+    // For ≤ 2 months expand all (no value in hiding when there's barely
+    // anything to scroll).
+    if (groupedResults.length <= 2) {
+      setExpandedMonths(new Set(groupedResults.map(([ym]) => ym)));
+    } else {
+      setExpandedMonths(new Set([groupedResults[0][0]]));
+    }
+  }, [groupedResults]);
+
+  const toggleMonth = (ym: string) => {
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(ym)) next.delete(ym);
+      else next.add(ym);
+      return next;
+    });
+  };
 
   // ---------------------------------------------------------------------------
   // URL helpers
@@ -372,38 +403,55 @@ function SearchInner() {
               const [yearStr, monthStr] = ym.split('-');
               const year = Number(yearStr);
               const month = Number(monthStr);
+              const isExpanded = expandedMonths.has(ym);
               return (
                 <section
                   key={ym}
-                  className={cn(idx === 0 ? '' : 'mt-8')}
+                  className={cn(idx === 0 ? '' : 'mt-4')}
                 >
-                  <h3 className="mb-3 flex items-baseline justify-between border-b border-stamp-ink/10 pb-2 text-sm font-medium text-stamp-ink/70">
-                    <span>
-                      {year}년 {month}월
+                  {/* Collapsible header. The whole row is a tappable button
+                      so users don't have to aim at a tiny chevron. */}
+                  <button
+                    type="button"
+                    onClick={() => toggleMonth(ym)}
+                    aria-expanded={isExpanded}
+                    aria-controls={`month-grid-${ym}`}
+                    className="mb-3 flex w-full items-center justify-between gap-2 border-b border-stamp-ink/10 pb-2 text-sm font-medium text-stamp-ink/70 hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {isExpanded ? (
+                        <ChevronDown className="size-4 text-stamp-ink/40" />
+                      ) : (
+                        <ChevronRight className="size-4 text-stamp-ink/40" />
+                      )}
+                      <span>
+                        {year}년 {month}월
+                      </span>
                     </span>
                     <span className="text-xs text-stamp-ink/40">
                       {stamps.length}개
                     </span>
-                  </h3>
+                  </button>
                   {/* size='md' (w-20 = 80px) + flex-wrap. 4 stamps per row
                       inside max-w-md (416px inner): 80×4 + 12×3 = 356px,
-                      ~60px spare. Bigger than the calendar grid (~50px)
-                      since search is a recall tool, but small enough to
-                      see 8+ stamps in one screen for pattern spotting.
-                      gap-3 (12px) gives a touch of breathing room without
-                      the lg-grid's photo-album feel. */}
-                  <div className="flex flex-wrap gap-3">
-                    {stamps.map((s) => (
-                      <StampView
-                        key={s.id}
-                        stamp={s}
-                        size="md"
-                        showDate
-                        showMood
-                        onClick={() => router.push(`/stamp/${s.date}`)}
-                      />
-                    ))}
-                  </div>
+                      ~60px spare. */}
+                  {isExpanded && (
+                    <div
+                      id={`month-grid-${ym}`}
+                      className="flex flex-wrap gap-3 pb-2"
+                    >
+                      {stamps.map((s) => (
+                        <StampView
+                          key={s.id}
+                          stamp={s}
+                          size="md"
+                          showDate
+                          showMood
+                          onClick={() => router.push(`/stamp/${s.date}`)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </section>
               );
             })}
