@@ -219,23 +219,6 @@ export function SearchStats({
       .slice(0, 3);
   }, [stamps, isSingleMood, hasCompanions]);
 
-  // 사람 1명만 선택했을 때 메타: 평균 간격
-  const meta = useMemo(() => {
-    if (!isSingleCompanion || hasMoods) return null;
-    if (stamps.length < 2) return null;
-    const dates = stamps.map((s) => s.date).sort();
-    const first = new Date(dates[0]);
-    const last = new Date(dates[dates.length - 1]);
-    const spanDays = Math.floor(
-      (last.getTime() - first.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    const avgInterval = Math.max(
-      1,
-      Math.floor(spanDays / Math.max(1, stamps.length - 1)),
-    );
-    return { count: stamps.length, avgInterval };
-  }, [stamps, isSingleCompanion, hasMoods]);
-
   // 너무 적은 데이터에선 통계 자체를 숨김 (해석이 무의미)
   if (stamps.length < 2) return null;
 
@@ -244,14 +227,17 @@ export function SearchStats({
   const willRenderMonthly = true; // 항상
   const willRenderCooccur = cooccur.length > 0;
   const willRenderTop = topCompanions.length > 0;
-  const willRenderMeta = meta !== null;
+  // 메타: 사람 1명만 + 감정 미선택일 때 총 횟수 한 줄. '평균 간격'은
+  // 사용자 요청으로 제거 (해석이 어려움 — 모이는 빈도가 일정하지
+  // 않으므로 평균이 misleading일 수 있음).
+  const willRenderCount = isSingleCompanion && !hasMoods;
 
   if (
     !willRenderMood &&
     !willRenderMonthly &&
     !willRenderCooccur &&
     !willRenderTop &&
-    !willRenderMeta
+    !willRenderCount
   ) {
     return null;
   }
@@ -269,10 +255,8 @@ export function SearchStats({
           pairs={topCompanions}
         />
       )}
-      {willRenderMeta && meta && (
-        <p className="text-xs text-stamp-ink/55">
-          총 {meta.count}번 · 평균 {meta.avgInterval}일 간격
-        </p>
+      {willRenderCount && (
+        <p className="text-xs text-stamp-ink/55">총 {stamps.length}번</p>
       )}
       {/* MOOD_DOT은 향후 단일 감정 카드 등에서 재사용 가능 — 일단 미사용 */}
       {false && <span className={MOOD_DOT.joy} />}
