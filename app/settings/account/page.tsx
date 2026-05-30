@@ -1,34 +1,36 @@
 'use client';
 
 // app/settings/account/page.tsx
-// Phase 6 Stage 4 — account view + sign-out.
+// Phase 6 Stage 4 + 5.A — account view + manual sync trigger.
 //
-// Auth guard: if not logged in, redirect to /auth/login. Loading state held
-// while the session is read (useUser handles the timing).
-//
-// Sync status section is a placeholder until Stage 5 (real sync layer)
-// lands — keeps the UI shape stable so adding sync state later is purely
-// additive.
+// Stage 5.A scope: user-initiated sync button + last-synced display. Stage
+// 5.B will add auto-sync (on app load, after each CRUD) so this page
+// becomes mostly informational.
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/useUser';
+import { getLastSyncedAt, syncStamps, type SyncResult } from '@/lib/sync';
 
 function AccountInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading, signOut } = useUser();
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState<boolean>(false);
+  const [lastResult, setLastResult] = useState<SyncResult | null>(null);
 
   // Welcome toast on first arrival from /auth/callback.
   useEffect(() => {
     if (searchParams.get('welcome') === '1') {
       toast.success('로그인 됐어요');
-      // Clean the param so reload doesn't re-toast.
       router.replace('/settings/account');
     }
   }, [searchParams, router]);
@@ -39,6 +41,45 @@ function AccountInner() {
       router.replace('/auth/login');
     }
   }, [loading, user, router]);
+
+  // Read the per-user last-synced watermark whenever the user resolves.
+  useEffect(() => {
+    if (!user) return;
+    setLastSynced(getLastSyncedAt(user.id));
+  }, [user]);
+
+  const handleSync = useCallback(async () => {
+    if (!user) return;
+    setSyncing(true);
+    setLastResult(null);
+    try {
+      const result = await syncStamps(user.id);
+      if (!result.ok) {
+        toast.error(`동기화 실패: ${result.error}`);
+        return;
+      }
+      const r = result.value;
+      setLastResult(r);
+      setLastSynced(getLastSyncedAt(user.id));
+      if (r.failed === 0) {
+        toast.success(
+          r.pushed === 0 && r.pulled === 0
+            ? '이미 최신 상태예요'
+            : `동기화 완료 · 올림 ${r.pushed} · 받음 ${r.pulled}`,
+        );
+      } else {
+        toast.warning(
+          `일부 항목 실패 · 올림 ${r.pushed} · 받음 ${r.pulled} · 실패 ${r.failed}`,
+        );
+      }
+    } catch (e) {
+      toast.error('동기화 중 문제가 생겼어요');
+      // eslint-disable-next-line no-console
+      console.error('manual sync failed', e);
+    } finally {
+      setSyncing(false);
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,10 +94,7 @@ function AccountInner() {
       </main>
     );
   }
-  if (!user) {
-    // Redirect in flight — render nothing rather than flash content.
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <main className="mx-auto max-w-md px-4 py-6">
@@ -82,15 +120,44 @@ function AccountInner() {
         </div>
 
         <div className="rounded-md border border-stamp-ink/10 bg-white/40 p-4">
-          <p className="text-xs uppercase tracking-wide text-stamp-ink/50">
-            동기화
-          </p>
-          <p className="mt-1 text-sm text-stamp-ink/70">
-            ⏳ 자동 동기화는 곧 활성화돼요 (Phase 6 Stage 5).
-          </p>
-          <p className="mt-2 text-xs text-stamp-ink/50">
-            지금은 로그인 상태만 유지되고, 데이터는 여전히 이 기기에 저장돼요.
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-wide text-stamp-ink/50">
+                동기화
+              </p>
+              <p className="mt-1 text-sm text-stamp-ink">
+                {lastSynced
+                  ? `마지막 동기화: ${formatDistanceToNow(lastSynced, { locale: ko, addSuffix: true })}`
+                  : '아직 동기화된 적이 없어요'}
+              </p>
+              {lastSynced && (
+                <p className="mt-1 text-xs text-stamp-ink/40">
+                  {format(lastSynced, 'yyyy-MM-dd HH:mm', { locale: ko })}
+                </p>
+              )}
+              {lastResult && (
+                <p className="mt-2 text-xs text-stamp-ink/60">
+                  방금 동기화: 올림 {lastResult.pushed} · 받음 {lastResult.pulled}
+                  {lastResult.skipped > 0 ? ` · 건너뜀 ${lastResult.skipped}` : ''}
+                  {lastResult.failed > 0 ? ` · 실패 ${lastResult.failed}` : ''}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={syncing}
+              className="h-10 gap-1.5"
+              aria-label="지금 동기화"
+            >
+              <RefreshCw
+                className={`size-3.5 ${syncing ? 'animate-spin' : ''}`}
+              />
+              {syncing ? '동기화 중…' : '지금 동기화'}
+            </Button>
+          </div>
         </div>
 
         <Button
@@ -104,7 +171,7 @@ function AccountInner() {
 
         <p className="text-xs leading-relaxed text-stamp-ink/50">
           로그아웃해도 이 기기의 우표들은 그대로 남아있어요. 다시 로그인하면
-          (Stage 5 이후) 서버와 자동으로 동기화됩니다.
+          서버에 백업된 우표들이 자동으로 합쳐집니다.
         </p>
       </section>
     </main>
