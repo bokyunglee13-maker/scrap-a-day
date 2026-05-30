@@ -40,7 +40,10 @@ import { MemoInput } from '@/components/editor/MemoInput';
 import { MoodPicker } from '@/components/editor/MoodPicker';
 import { StylePicker } from '@/components/editor/StylePicker';
 import { StampPreview } from '@/components/editor/StampPreview';
-import { CompanionPicker } from '@/components/editor/CompanionPicker';
+import {
+  CompanionPicker,
+  type CompanionPickerHandle,
+} from '@/components/editor/CompanionPicker';
 import { validatePhotoFile } from '@/lib/photoValidation';
 import { extractCroppedBlob } from '@/lib/imageProcessing';
 import { createStamp, type StampInput } from '@/lib/stamps';
@@ -154,6 +157,10 @@ function NewStampInner() {
   // single input.
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  // CompanionPicker exposes commitPending() to flush any half-typed name
+  // before we read `companions` in handleSubmit. Catches the common case
+  // where users type "지수" then tap 우표 붙이기 without pressing Enter.
+  const companionPickerRef = useRef<CompanionPickerHandle | null>(null);
 
   // Blob URL hygiene: revoke when the URL changes or on unmount. PRD §15.5.4.
   useEffect(() => {
@@ -221,6 +228,14 @@ function NewStampInner() {
     if (!photoFile) return;
     setSubmitting(true);
     try {
+      // Flush any pending companion text BEFORE reading `companions`. Without
+      // this, a user who types "지수" then immediately taps 우표 붙이기 (without
+      // pressing Enter) would have their entry silently dropped. commitPending
+      // returns the final list synchronously so we don't need to wait for the
+      // React state cycle that onChange would trigger.
+      const finalCompanions =
+        companionPickerRef.current?.commitPending() ?? companions;
+
       // Extract the cropped region into a new blob via canvas. Stamp
       // components then display this blob directly with object-cover
       // and the user's selection is preserved at every display size.
@@ -251,7 +266,7 @@ function NewStampInner() {
         moodVisible,
         style,
         // Empty array → omit so the field stays absent from storage.
-        companions: companions.length > 0 ? companions : undefined,
+        companions: finalCompanions.length > 0 ? finalCompanions : undefined,
       };
       const result = await createStamp(input);
       if (result.ok) {
@@ -426,7 +441,11 @@ function NewStampInner() {
               <h2 className="text-sm font-medium text-stamp-ink/60">
                 함께한 사람
               </h2>
-              <CompanionPicker value={companions} onChange={setCompanions} />
+              <CompanionPicker
+                ref={companionPickerRef}
+                value={companions}
+                onChange={setCompanions}
+              />
             </section>
 
             <section className="flex flex-col gap-2">
