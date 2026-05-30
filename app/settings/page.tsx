@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Classic removed from the picker per user feedback. Existing stamps with
+// style='classic' still render (back-compat); only new stamps are limited.
 const STYLE_OPTIONS: Array<{ value: StampStyle; label: string }> = [
-  { value: "classic", label: "클래식" },
   { value: "minimal", label: "미니멀" },
   { value: "polaroid", label: "폴라로이드" },
 ];

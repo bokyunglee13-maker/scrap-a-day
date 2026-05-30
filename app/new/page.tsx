@@ -45,6 +45,7 @@ import { validatePhotoFile } from '@/lib/photoValidation';
 import { extractCroppedBlob } from '@/lib/imageProcessing';
 import { createStamp, type StampInput } from '@/lib/stamps';
 import { incrementFailed } from '@/lib/usage';
+import { isPastMonth, REGISTRATION_BLOCKED_MESSAGE } from '@/lib/dateGuards';
 import type { CropData, Mood, StampStyle } from '@/types';
 
 type Phase = 'pickPhoto' | 'crop' | 'meta';
@@ -73,6 +74,8 @@ function isFutureDate(iso: string): boolean {
   return iso > todayKey();
 }
 
+// Past-month guard reused from lib/dateGuards.
+
 function formatDisplayDate(iso: string): string {
   try {
     return format(parseISO(iso), 'yyyy년 M월 d일', { locale: ko });
@@ -85,10 +88,29 @@ function FutureGuard({ date }: { date: string }) {
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-10 text-center">
       <p className="font-handwriting text-3xl text-stamp-ink">
-        내일을 기다려요
+        {REGISTRATION_BLOCKED_MESSAGE.future}
       </p>
       <p className="mt-3 text-sm text-stamp-ink/60">
         {formatDisplayDate(date)}은 아직 오지 않았어요.
+      </p>
+      <Link
+        href="/"
+        className="mt-8 inline-flex h-12 items-center rounded-md bg-stamp-ink px-6 text-base text-stamp-paper"
+      >
+        캘린더로 돌아가기
+      </Link>
+    </main>
+  );
+}
+
+function PastMonthGuard({ date }: { date: string }) {
+  return (
+    <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-10 text-center">
+      <p className="font-handwriting text-3xl text-stamp-ink">
+        {REGISTRATION_BLOCKED_MESSAGE.pastMonth}
+      </p>
+      <p className="mt-3 text-sm text-stamp-ink/60">
+        {formatDisplayDate(date)}은 지난 달의 기억이에요.
       </p>
       <Link
         href="/"
@@ -110,6 +132,7 @@ function NewStampInner() {
   );
 
   const futureBlocked = isFutureDate(date);
+  const pastMonthBlocked = isPastMonth(date);
 
   // Phase + draft state. Kept as discrete useState; no reducer needed.
   const [phase, setPhase] = useState<Phase>('pickPhoto');
@@ -255,6 +278,9 @@ function NewStampInner() {
 
   if (futureBlocked) {
     return <FutureGuard date={date} />;
+  }
+  if (pastMonthBlocked) {
+    return <PastMonthGuard date={date} />;
   }
 
   const headerLabel = formatDisplayDate(date);

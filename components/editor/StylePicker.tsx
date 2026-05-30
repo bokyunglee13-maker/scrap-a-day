@@ -17,8 +17,10 @@ interface StyleSpec {
   label: string;
 }
 
+// Classic style removed from the picker per user feedback. Existing stamps
+// with style='classic' still render correctly (StampClassic component is
+// preserved for back-compat).
 const STYLES: StyleSpec[] = [
-  { style: 'classic', label: '클래식' },
   { style: 'minimal', label: '미니멀' },
   { style: 'polaroid', label: '폴라로이드' },
 ];
@@ -28,7 +30,7 @@ export function StylePicker({ value, onChange }: StylePickerProps) {
     <div
       role="radiogroup"
       aria-label="우표 스타일"
-      className="grid grid-cols-3 gap-2"
+      className="grid grid-cols-2 gap-2"
     >
       {STYLES.map((s) => {
         const isOn = value === s.style;

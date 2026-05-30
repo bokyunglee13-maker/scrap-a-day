@@ -6,6 +6,10 @@ import { format } from "date-fns";
 import { Stamp, EmptyStamp } from "@/components/stamp/Stamp";
 import type { Stamp as StampRecord } from "@/types";
 import { cn } from "@/lib/utils";
+import {
+  isPastMonth,
+  REGISTRATION_BLOCKED_MESSAGE,
+} from "@/lib/dateGuards";
 
 interface DayCellProps {
   date: Date;
@@ -50,13 +54,13 @@ export function DayCell({
           date={iso}
           size="full"
           isToday={false}
-          onClick={() => toast("내일을 기다려요")}
+          onClick={() => toast(REGISTRATION_BLOCKED_MESSAGE.future)}
         />
       </div>
     );
   }
 
-  // Filled stamp.
+  // Filled stamp — always viewable, even in past months.
   if (stamp !== null) {
     return (
       <div className="flex flex-col">
@@ -71,7 +75,22 @@ export function DayCell({
     );
   }
 
-  // Empty past/today cell.
+  // Past-month + empty: blocked from new registration (warm toast only).
+  // User can still tap to feel a response — just no /new navigation.
+  if (isPastMonth(iso)) {
+    return (
+      <div className="flex flex-col gap-1 opacity-40">
+        <EmptyStamp
+          date={iso}
+          size="full"
+          isToday={false}
+          onClick={() => toast(REGISTRATION_BLOCKED_MESSAGE.pastMonth)}
+        />
+      </div>
+    );
+  }
+
+  // Empty past-in-this-month or today cell: registerable.
   return (
     <div className="flex flex-col gap-1">
       <EmptyStamp
