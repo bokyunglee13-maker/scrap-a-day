@@ -18,6 +18,7 @@ import { Download } from "lucide-react";
 
 import { SearchExportLayout } from "./SearchExportLayout";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -70,14 +71,30 @@ async function waitForImages(root: HTMLElement): Promise<void> {
   );
 }
 
-function triggerDownload(dataUrl: string, filename: string): boolean {
+/**
+ * Trigger a download. Converts the dataURL to a Blob URL first because
+ * many mobile in-app browsers (Naver, KakaoTalk, Instagram) intercept
+ * `<a href="data:..." download>` clicks but then refuse to process the
+ * data URL — the user sees a '다운로드 실패' toast even though we never
+ * threw. Blob URLs are same-origin object refs that all browsers handle
+ * the same way: 'real download'.
+ */
+async function triggerDownload(
+  dataUrl: string,
+  filename: string,
+): Promise<boolean> {
   try {
+    const blob = await (await fetch(dataUrl)).blob();
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = dataUrl;
+    a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    // Revoke after 60s — long enough for any browser's download manager
+    // to have fetched the blob, short enough that we don't leak memory.
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     return true;
   } catch {
     return false;
@@ -141,11 +158,24 @@ export function ExportSearch({
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const isDisabled =
-    disabled || stamps.length === 0 || rendering || confirmOpen;
+  // Visually disabled (faded) when there's nothing to download, but the
+  // button stays *clickable* — taps surface a hint toast explaining why
+  // ("사람 또는 감정 먼저 선택"), which is friendlier than a silent
+  // dead button. True disabled-disabled only while a render/dialog is
+  // already in flight.
+  const isInFlight = rendering || confirmOpen;
+  const isEmpty = disabled || stamps.length === 0;
 
   const handleClick = () => {
-    if (isDisabled) return;
+    if (isInFlight) return;
+    if (disabled) {
+      toast("사람 또는 감정을 먼저 선택해주세요");
+      return;
+    }
+    if (stamps.length === 0) {
+      toast("이 조건에 맞는 우표가 없어요");
+      return;
+    }
     if (stamps.length > CONFIRM_THRESHOLD) {
       // Surface the heavy-render warning so users aren't surprised by a
       // 5000px-tall PNG. They can either continue (we proceed) or cancel
@@ -180,7 +210,7 @@ export function ExportSearch({
         });
         const filename = buildFilename(selectedCompanions, selectedMoods);
 
-        const downloaded = triggerDownload(dataUrl, filename);
+        const downloaded = await triggerDownload(dataUrl, filename);
         if (cancelled) return;
         if (!downloaded) {
           toast.error("다운로드가 차단됐어요. 팝업을 허용해주세요.");
@@ -214,9 +244,14 @@ export function ExportSearch({
       <button
         type="button"
         onClick={handleClick}
-        disabled={isDisabled}
+        disabled={isInFlight}
         aria-label="검색 결과 이미지 저장"
-        className="inline-flex size-11 items-center justify-center rounded-sm p-2 text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30"
+        className={cn(
+          "inline-flex size-11 items-center justify-center rounded-sm p-2 text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30",
+          // 'Visually disabled' when nothing to download — but clickable so
+          // the hint toast still fires.
+          isEmpty && !isInFlight && "opacity-30",
+        )}
       >
         <Download className="size-5" />
       </button>

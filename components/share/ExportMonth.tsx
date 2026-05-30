@@ -64,19 +64,31 @@ async function waitForImages(root: HTMLElement): Promise<void> {
 }
 
 /**
- * Trigger an actual file download via an anchor click. On Android this writes
- * to the Downloads directory (visible in 갤러리 → Downloads album). On iOS
- * Safari this routes through the Files app — Photos saves go through the
- * share-action toast below.
+ * Trigger an actual file download via an anchor click. Converts the dataURL
+ * to a Blob URL first because many mobile in-app browsers (Naver, KakaoTalk,
+ * Instagram) reject `<a href="data:..." download>` clicks — the browser
+ * intercepts but then can't process the URL and surfaces '다운로드 실패'
+ * to the user. Blob URLs are same-origin object refs and work universally.
+ *
+ * On Android this writes to the Downloads directory (visible in 갤러리 →
+ * Downloads album). On iOS Safari this routes through the Files app —
+ * Photos saves go through the share-action toast below.
  */
-function triggerDownload(dataUrl: string, filename: string): boolean {
+async function triggerDownload(
+  dataUrl: string,
+  filename: string,
+): Promise<boolean> {
   try {
+    const blob = await (await fetch(dataUrl)).blob();
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = dataUrl;
+    a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    // Revoke after 60s — enough for any download manager to fetch the blob.
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     return true;
   } catch {
     return false;
@@ -178,7 +190,7 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
         const mm = String(month).padStart(2, "0");
         const filename = `scrap-a-day-${year}-${mm}.png`;
 
-        const downloaded = triggerDownload(dataUrl, filename);
+        const downloaded = await triggerDownload(dataUrl, filename);
         if (cancelled) return;
         if (!downloaded) {
           toast.error("다운로드가 차단됐어요. 팝업을 허용해주세요.");
