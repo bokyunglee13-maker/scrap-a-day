@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { db } from "@/lib/db";
 import { getSettings, updateSettings } from "@/lib/settings";
+import { useUser } from "@/hooks/useUser";
 import type { Settings, StampStyle } from "@/types";
 import {
   Select,
@@ -41,6 +42,9 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [styleSaving, setStyleSaving] = useState(false);
+
+  // Auth state — controls whether we show '계정' or '로그인' as the top row.
+  const { user, loading: userLoading } = useUser();
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +85,34 @@ export default function SettingsPage() {
       </header>
 
       <nav className="mt-6 divide-y divide-stamp-ink/10 rounded-sm border border-stamp-ink/10 bg-white/40">
+        {/* Account row — '계정' when logged in (shows email), '로그인' otherwise.
+            While auth is loading, render a neutral placeholder to avoid flash. */}
+        {userLoading ? (
+          <div className="flex h-14 items-center px-4 text-base text-stamp-ink/40">
+            계정 확인 중…
+          </div>
+        ) : user ? (
+          <SettingsRow
+            href="/settings/account"
+            label="계정"
+            trailing={
+              <span className="font-sans text-xs text-stamp-ink/50 max-w-[160px] truncate">
+                {user.email}
+              </span>
+            }
+          />
+        ) : (
+          <SettingsRow
+            href="/auth/login"
+            label="로그인"
+            trailing={
+              <span className="font-sans text-xs text-stamp-ink/40">
+                다른 기기 동기화
+              </span>
+            }
+          />
+        )}
+
         <SettingsRow href="/search" label="검색" />
         <SettingsRow href="/settings/backup" label="백업" />
         <SettingsRow
