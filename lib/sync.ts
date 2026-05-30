@@ -140,6 +140,9 @@ export interface SyncResult {
   failed: number;
   /** Human-readable errors, capped to keep toast / log readable. */
   errors: string[];
+  /** True when this was the first sync for this user on this device
+   *  (watermark was null at cycle start). Lets callers show migration UX. */
+  isFirstSync: boolean;
 }
 
 const MAX_LOGGED_ERRORS = 5;
@@ -291,18 +294,19 @@ async function pullStamps(
 export async function syncStamps(userId: string): Promise<Result<SyncResult>> {
   if (!userId) return err("NOT_AUTHENTICATED");
 
+  // Capture the start time BEFORE any work, so the watermark we set is
+  // never ahead of changes that happened during this run.
+  const cycleStartedAt = new Date();
+  const since = getLastSyncedAt(userId);
+
   const result: SyncResult = {
     pushed: 0,
     pulled: 0,
     skipped: 0,
     failed: 0,
     errors: [],
+    isFirstSync: since === null,
   };
-
-  // Capture the start time BEFORE any work, so the watermark we set is
-  // never ahead of changes that happened during this run.
-  const cycleStartedAt = new Date();
-  const since = getLastSyncedAt(userId);
 
   await pushStamps(userId, since, result);
   await pullStamps(userId, since, result);
