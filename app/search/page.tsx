@@ -150,6 +150,26 @@ function SearchInner() {
     return matches;
   }, [companionsKey, moodsKey, range]);
 
+  // Group results by YYYY-MM. Precomputed via useMemo so the render path
+  // is a plain array map (the earlier IIFE-inside-JSX form rendered the
+  // section headers but the grid cells came out 0px on some mobile WebViews
+  // — likely a layout-timing edge with aspect-ratio inside a freshly-
+  // committed Map iteration).
+  const groupedResults = useMemo(() => {
+    if (!results || results.length === 0) return [];
+    const map = new Map<string, typeof results>();
+    for (const s of results) {
+      const ym = s.date.slice(0, 7); // 'YYYY-MM'
+      const existing = map.get(ym);
+      if (existing) {
+        existing.push(s);
+      } else {
+        map.set(ym, [s]);
+      }
+    }
+    return Array.from(map.entries());
+  }, [results]);
+
   // ---------------------------------------------------------------------------
   // URL helpers
   // ---------------------------------------------------------------------------
@@ -325,58 +345,43 @@ function SearchInner() {
             <p className="mb-4 text-sm text-stamp-ink/60">
               {results.length}개 · {RANGE_PRESET_LABEL[range]}
             </p>
-            {/* Group results by YYYY-MM so the user reads them as 'in 5월'
-                / 'in 4월' clusters rather than a flat reverse-chronological
-                wall. Results are already sorted newest-first, so grouping
-                by insertion order naturally gives newest months first. */}
-            {(() => {
-              const groups = new Map<string, typeof results>();
-              for (const s of results) {
-                const ym = s.date.slice(0, 7); // 'YYYY-MM'
-                const existing = groups.get(ym);
-                if (existing) {
-                  existing.push(s);
-                } else {
-                  groups.set(ym, [s]);
-                }
-              }
-              return Array.from(groups.entries()).map(([ym, stamps], idx) => {
-                const [yearStr, monthStr] = ym.split('-');
-                const year = Number(yearStr);
-                const month = Number(monthStr);
-                return (
-                  <section key={ym} className={cn(idx === 0 ? '' : 'mt-8')}>
-                    <h3 className="mb-3 flex items-baseline justify-between border-b border-stamp-ink/10 pb-2 text-sm font-medium text-stamp-ink/70">
-                      <span>
-                        {year}년 {month}월
-                      </span>
-                      <span className="text-xs text-stamp-ink/40">
-                        {stamps.length}개
-                      </span>
-                    </h3>
-                    {/* 2-col mobile / 3-col sm+ — each stamp ~165px wide on
-                        a typical phone so the photo is actually legible.
-                        aspect-[3/4] on the li guarantees a sized grid cell. */}
-                    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                      {stamps.map((s) => (
-                        <li
-                          key={s.id}
-                          className="block aspect-[3/4] w-full"
-                        >
-                          <StampView
-                            stamp={s}
-                            size="full"
-                            showDate
-                            showMood
-                            onClick={() => router.push(`/stamp/${s.date}`)}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              });
-            })()}
+            {groupedResults.map(([ym, stamps], idx) => {
+              const [yearStr, monthStr] = ym.split('-');
+              const year = Number(yearStr);
+              const month = Number(monthStr);
+              return (
+                <section
+                  key={ym}
+                  className={cn(idx === 0 ? '' : 'mt-8')}
+                >
+                  <h3 className="mb-3 flex items-baseline justify-between border-b border-stamp-ink/10 pb-2 text-sm font-medium text-stamp-ink/70">
+                    <span>
+                      {year}년 {month}월
+                    </span>
+                    <span className="text-xs text-stamp-ink/40">
+                      {stamps.length}개
+                    </span>
+                  </h3>
+                  {/* div + div instead of ul/li — ul list-style was likely
+                      what made some WebViews delay grid-track layout until
+                      after the aspect-ratio resolved (resulting in 0px
+                      cells). Plain div grid is robust everywhere. */}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    {stamps.map((s) => (
+                      <div key={s.id} className="aspect-[3/4] w-full">
+                        <StampView
+                          stamp={s}
+                          size="full"
+                          showDate
+                          showMood
+                          onClick={() => router.push(`/stamp/${s.date}`)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </>
         )}
       </section>
