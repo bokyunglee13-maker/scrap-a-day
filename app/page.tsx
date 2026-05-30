@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useCurrentMonth } from "@/hooks/useCurrentMonth";
+import { useAutoSync } from "@/hooks/useAutoSync";
 import { recordDailyVisit } from "@/lib/usage";
 import { cleanExpiredTrash } from "@/lib/trash";
 import { MonthHeader } from "@/components/calendar/MonthHeader";
@@ -13,6 +14,10 @@ import { ExportMonth } from "@/components/share/ExportMonth";
 
 export default function HomePage() {
   const { year, month, goPrev, goNext, goToday, isCurrent } = useCurrentMonth();
+
+  // Auto-sync with Supabase if logged in. No-op for logged-out users.
+  // Mount-time sync + debounced sync on any local stamp change.
+  useAutoSync();
 
   useEffect(() => {
     // App-load housekeeping (fire-and-forget):

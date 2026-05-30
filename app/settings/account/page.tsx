@@ -17,7 +17,7 @@ import { ko } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/useUser';
-import { getLastSyncedAt, syncStamps, type SyncResult } from '@/lib/sync';
+import { getLastSyncedAt, syncAll, type SyncResult } from '@/lib/sync';
 
 function AccountInner() {
   const router = useRouter();
@@ -53,7 +53,7 @@ function AccountInner() {
     setSyncing(true);
     setLastResult(null);
     try {
-      const result = await syncStamps(user.id);
+      const result = await syncAll(user.id);
       if (!result.ok) {
         toast.error(`동기화 실패: ${result.error}`);
         return;

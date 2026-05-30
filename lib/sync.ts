@@ -27,8 +27,9 @@ import { db } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { logError } from "@/lib/errors";
 import { uploadPhoto, downloadPhoto } from "@/lib/photoStorage";
+import { getSettings, updateSettings } from "@/lib/settings";
 import { ok, err, type Result } from "@/lib/result";
-import type { Stamp } from "@/types";
+import type { Stamp, Settings, StampStyle } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Supabase row shapes (must match docs/supabase-schema.sql)
@@ -309,4 +310,92 @@ export async function syncStamps(userId: string): Promise<Result<SyncResult>> {
   setLastSyncedAt(userId, cycleStartedAt);
 
   return ok(result);
+}
+
+// ---------------------------------------------------------------------------
+// Settings sync (single row per user — simple LWW upsert)
+// ---------------------------------------------------------------------------
+
+interface RemoteSettings {
+  user_id: string;
+  default_style: string;
+  week_start: string;
+  last_backup_at: string | null;
+  updated_at: string;
+}
+
+/**
+ * Settings is a single row per user. LWW upsert: whichever side has the
+ * newer updated_at wins. We don't track a separate watermark — settings
+ * are tiny and syncing on every cycle is fine.
+ */
+export async function syncSettings(userId: string): Promise<Result<void>> {
+  if (!userId) return err("NOT_AUTHENTICATED");
+  try {
+    const localRes = await getSettings();
+    if (!localRes.ok) return err("LOCAL_READ_FAILED");
+    const local = localRes.value;
+
+    // Fetch server row (may not exist).
+    const { data, error } = await supabase
+      .from("settings")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      await logError("syncSettings.select", error);
+      return err("REMOTE_READ_FAILED");
+    }
+
+    const remote = data as RemoteSettings | null;
+    const localUpdated = new Date(); // local doesn't track updated_at — treat as 'now'-ish
+    const remoteUpdated = remote ? new Date(remote.updated_at) : new Date(0);
+
+    if (!remote) {
+      // No server row yet → push local to server.
+      await pushSettingsToServer(userId, local);
+      return ok(undefined);
+    }
+
+    // If remote is strictly newer, pull it into local.
+    if (remoteUpdated.getTime() > localUpdated.getTime() - 1000) {
+      // Within 1s of local — defer to remote (avoids ping-pong loops).
+      await updateSettings({
+        defaultStyle: remote.default_style as StampStyle,
+        lastBackupAt: remote.last_backup_at ? new Date(remote.last_backup_at) : null,
+      });
+    } else {
+      // Local has changes server doesn't have → push.
+      await pushSettingsToServer(userId, local);
+    }
+    return ok(undefined);
+  } catch (e) {
+    await logError("syncSettings", e);
+    return err("SYNC_FAILED");
+  }
+}
+
+async function pushSettingsToServer(userId: string, local: Settings): Promise<void> {
+  const row: RemoteSettings = {
+    user_id: userId,
+    default_style: local.defaultStyle,
+    week_start: local.weekStart,
+    last_backup_at: local.lastBackupAt?.toISOString() ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from("settings").upsert(row);
+  if (error) {
+    await logError("pushSettingsToServer", error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// syncAll — convenience wrapper for callers that want both axes
+// ---------------------------------------------------------------------------
+
+export async function syncAll(userId: string): Promise<Result<SyncResult>> {
+  // Run stamps first (heavier, more critical). Settings is best-effort.
+  const stampsRes = await syncStamps(userId);
+  void syncSettings(userId); // fire-and-forget
+  return stampsRes;
 }
