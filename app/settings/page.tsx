@@ -114,6 +114,7 @@ export default function SettingsPage() {
         )}
 
         <SettingsRow href="/search" label="검색" />
+        <SettingsRow href="/settings/background" label="배경 색" />
         <SettingsRow href="/settings/backup" label="백업" />
         <SettingsRow
           href="/settings/trash"

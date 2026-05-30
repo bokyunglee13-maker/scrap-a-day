@@ -19,15 +19,15 @@
 // when the data is ready.
 
 import { useEffect, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 
 import { MonthExportLayout } from "./MonthExportLayout";
 import { db } from "@/lib/db";
+import { DEFAULT_BACKGROUND_COLOR, getSettings } from "@/lib/settings";
 import type { Stamp } from "@/types";
-
-const STAMP_PAPER = "#fbeaf0";
 
 interface ExportMonthProps {
   year: number;
@@ -136,6 +136,13 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [stamps, setStamps] = useState<Stamp[]>([]);
 
+  // User's chosen background color — applied to the export poster +
+  // toPng's canvas fill so the downloaded PNG matches what they see.
+  const settingsResult = useLiveQuery(() => getSettings(), []);
+  const userBg =
+    (settingsResult?.ok && settingsResult.value.backgroundColor) ||
+    DEFAULT_BACKGROUND_COLOR;
+
   // Click → fetch stamps for this month, then flip to 'rendering' which
   // mounts the offscreen layout. The render effect below handles toPng.
   const handleClick = async () => {
@@ -185,7 +192,7 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
         // page. Embed → Paperlogy guaranteed.
         const dataUrl = await toPng(offscreenRef.current, {
           pixelRatio: 2,
-          backgroundColor: STAMP_PAPER,
+          backgroundColor: userBg,
         });
         const mm = String(month).padStart(2, "0");
         const filename = `scrap-a-day-${year}-${mm}.png`;
@@ -250,7 +257,12 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
           }}
         >
           <div ref={offscreenRef}>
-            <MonthExportLayout year={year} month={month} stamps={stamps} />
+            <MonthExportLayout
+              year={year}
+              month={month}
+              stamps={stamps}
+              backgroundColor={userBg}
+            />
           </div>
         </div>
       )}

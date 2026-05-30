@@ -93,10 +93,12 @@ export function EmptyStamp({
         ) : null;
       })()}
 
-      {/* Perforation overlay — no stroke for cleaner look. */}
+      {/* Perforation overlay — fill follows --user-bg so teeth blend with
+          whatever app background the user picked. */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper"
+        className="pointer-events-none absolute inset-0"
+        style={{ fill: "var(--user-bg, #FBEAF0)" }}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         preserveAspectRatio="none"
       >

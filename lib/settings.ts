@@ -11,12 +11,15 @@ import { logError } from "@/lib/errors";
 import { ok, err, type Result } from "@/lib/result";
 import type { Settings } from "@/types";
 
+export const DEFAULT_BACKGROUND_COLOR = "#FBEAF0";
+
 const DEFAULT_SETTINGS: Settings = {
   id: "default",
   defaultStyle: "minimal",
   weekStart: "monday",
   lastBackupAt: null,
   disabledSpecialDays: [],
+  backgroundColor: DEFAULT_BACKGROUND_COLOR,
 };
 
 /**

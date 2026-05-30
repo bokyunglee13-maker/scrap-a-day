@@ -41,9 +41,16 @@ interface MonthExportLayoutProps {
    *  Passing as a prop guarantees the data is ready before render — critical
    *  for the offscreen toPng capture. */
   stamps: Stamp[];
+  /** App background color from user settings. Falls back to brand pink. */
+  backgroundColor?: string;
 }
 
-export function MonthExportLayout({ year, month, stamps }: MonthExportLayoutProps) {
+export function MonthExportLayout({
+  year,
+  month,
+  stamps,
+  backgroundColor = "#FBEAF0",
+}: MonthExportLayoutProps) {
   const monthAnchor = new Date(year, month - 1, 1);
 
   // 7×N Monday-start grid covering the whole month.
@@ -64,8 +71,14 @@ export function MonthExportLayout({ year, month, stamps }: MonthExportLayoutProp
 
   return (
     <div
-      className="bg-stamp-paper"
-      style={{ width: EXPORT_WIDTH, padding: 40 }}
+      style={{
+        width: EXPORT_WIDTH,
+        padding: 40,
+        backgroundColor,
+        // Make --user-bg resolve inside this subtree so the Stamp
+        // perforation overlays use this color too.
+        ['--user-bg' as string]: backgroundColor,
+      }}
     >
       {/* Header — year+month, dotted divider, signature wordmark.
           font-serif still tagged but now aliased to Paperlogy globally.

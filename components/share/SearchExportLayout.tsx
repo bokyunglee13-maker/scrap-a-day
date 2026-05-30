@@ -38,6 +38,8 @@ interface SearchExportLayoutProps {
   selectedCompanions: string[];
   selectedMoods: Mood[];
   range: RangePreset;
+  /** App background color from user settings. Falls back to brand pink. */
+  backgroundColor?: string;
 }
 
 /**
@@ -84,6 +86,7 @@ export function SearchExportLayout({
   selectedCompanions,
   selectedMoods,
   range,
+  backgroundColor = "#FBEAF0",
 }: SearchExportLayoutProps) {
   const title = buildTitle(selectedCompanions, selectedMoods);
   const caption = buildCaption(
@@ -108,8 +111,12 @@ export function SearchExportLayout({
 
   return (
     <div
-      className="bg-stamp-paper"
-      style={{ width: EXPORT_WIDTH, padding: 40 }}
+      style={{
+        width: EXPORT_WIDTH,
+        padding: 40,
+        backgroundColor,
+        ['--user-bg' as string]: backgroundColor,
+      }}
     >
       {/* Header — title + caption + dashed divider */}
       <header className="text-center">

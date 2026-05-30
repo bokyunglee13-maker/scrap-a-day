@@ -43,12 +43,21 @@ export interface Settings {
   weekStart: 'monday';
   lastBackupAt: Date | null;
   /**
-   * Special-day sticker keys the user has turned off. Strings (not the
-   * SpecialDay union) to avoid a types→lib/specialDays import cycle and
-   * to keep persisted data forward-compatible if we add new stickers.
-   * Default behavior when undefined = empty array = all stickers shown.
+   * @deprecated Replaced by per-stamp `hideSpecialDaySticker` flag (more
+   * intuitive than a global per-day list — user feedback). Field kept
+   * to preserve existing data; new code path ignores it.
    */
   disabledSpecialDays?: string[];
+  /**
+   * App-wide background color (body + perforation fill). Any CSS color
+   * string; user-chosen via /settings/background. Default = stamp-paper
+   * '#FBEAF0' (the original brand pink) when undefined.
+   * Applied to: body background + each stamp's perforation 'teeth' so
+   * the bites read as the surrounding paper rather than as gaps.
+   * NOT applied to the stamp's inner paper backdrop (kept brand pink
+   * so the stamp itself stays the visual anchor on any background).
+   */
+  backgroundColor?: string;
 }
 
 export interface ErrorLog {

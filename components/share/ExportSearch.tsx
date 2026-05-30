@@ -12,12 +12,14 @@
 // export, and we'd rather signal that than render an empty poster.
 
 import { useEffect, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 
 import { SearchExportLayout } from "./SearchExportLayout";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_BACKGROUND_COLOR, getSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -155,8 +157,14 @@ export function ExportSearch({
 }: ExportSearchProps) {
   const offscreenRef = useRef<HTMLDivElement | null>(null);
   const [rendering, setRendering] = useState(false);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // User's chosen background color — applied to the export poster +
+  // toPng's canvas fill so the downloaded PNG matches what they see.
+  const settingsResult = useLiveQuery(() => getSettings(), []);
+  const userBg =
+    (settingsResult?.ok && settingsResult.value.backgroundColor) ||
+    DEFAULT_BACKGROUND_COLOR;
 
   // Visually disabled (faded) when there's nothing to download, but the
   // button stays *clickable* — taps surface a hint toast explaining why
@@ -206,7 +214,7 @@ export function ExportSearch({
         if (cancelled) return;
         const dataUrl = await toPng(offscreenRef.current, {
           pixelRatio: 2,
-          backgroundColor: STAMP_PAPER,
+          backgroundColor: userBg,
         });
         const filename = buildFilename(selectedCompanions, selectedMoods);
 
@@ -272,6 +280,7 @@ export function ExportSearch({
               selectedCompanions={selectedCompanions}
               selectedMoods={selectedMoods}
               range={range}
+              backgroundColor={userBg}
             />
           </div>
         </div>

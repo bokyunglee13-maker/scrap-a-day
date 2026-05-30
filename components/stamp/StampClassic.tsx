@@ -174,12 +174,14 @@ export function StampClassic({
       )}
 
       {/* Perforation overlay — painted scallops bite into the photo edges.
-          No stroke: a clean stamp-paper fill reads as actual paper showing
-          through the perforation cuts (real-stamp look). The earlier stroke
-          version felt 'painted on' to the user. */}
+          Fill uses the --user-bg CSS variable (set by BackgroundProvider)
+          so the teeth match whatever app background the user picked.
+          Falls back to stamp-paper pink if the variable isn't set yet
+          (SSR + first paint before BackgroundProvider runs). */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 fill-stamp-paper"
+        className="pointer-events-none absolute inset-0"
+        style={{ fill: "var(--user-bg, #FBEAF0)" }}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         preserveAspectRatio="none"
       >

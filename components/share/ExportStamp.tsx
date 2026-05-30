@@ -14,15 +14,15 @@
 // perforation bites read as paper, not gaps.
 
 import { useEffect, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { ImageDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Stamp as StampView } from "@/components/stamp/Stamp";
+import { DEFAULT_BACKGROUND_COLOR, getSettings } from "@/lib/settings";
 import type { Stamp } from "@/types";
-
-const STAMP_PAPER = "#fbeaf0";
 
 interface ExportStampProps {
   stamp: Stamp;
@@ -114,6 +114,11 @@ export function ExportStamp({ stamp }: ExportStampProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [rendering, setRendering] = useState<boolean>(false);
 
+  const settingsResult = useLiveQuery(() => getSettings(), []);
+  const userBg =
+    (settingsResult?.ok && settingsResult.value.backgroundColor) ||
+    DEFAULT_BACKGROUND_COLOR;
+
   const handleClick = () => {
     if (rendering) return;
     setRendering(true);
@@ -138,7 +143,7 @@ export function ExportStamp({ stamp }: ExportStampProps) {
         // Removing it was the fix for the same bug ExportMonth had.
         const dataUrl = await toPng(exportRef.current, {
           pixelRatio: 3,
-          backgroundColor: STAMP_PAPER,
+          backgroundColor: userBg,
         });
         const filename = `scrap-a-day-${stamp.date}.png`;
 
@@ -201,7 +206,8 @@ export function ExportStamp({ stamp }: ExportStampProps) {
             ref={exportRef}
             style={{
               padding: "24px",
-              backgroundColor: STAMP_PAPER,
+              backgroundColor: userBg,
+              ['--user-bg' as string]: userBg,
             }}
           >
             <StampView stamp={stamp} size="xl" showDate showMood />

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { BackgroundProvider } from "@/components/BackgroundProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorListeners } from "@/components/ErrorListeners";
 import { Toaster } from "@/components/ui/sonner";
@@ -70,6 +71,7 @@ export default function RootLayout({
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
+        <BackgroundProvider />
         <ErrorListeners />
         <ErrorBoundary>{children}</ErrorBoundary>
         <Toaster position="bottom-center" richColors closeButton />
