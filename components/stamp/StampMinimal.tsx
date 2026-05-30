@@ -121,15 +121,12 @@ export function StampMinimal({
         </div>
       )}
 
-      {/* Special-day badge — TOP RIGHT (date chip lives top-left). */}
+      {/* Special-day decoration — scattered stickers (compact / full). */}
       {(() => {
         const day = getSpecialDay(stamp.date);
         const isSmall = size === 'sm' || size === 'md' || size === 'full';
         return day ? (
-          <SpecialDayBadge
-            day={day}
-            className={cn('right-[6%] top-[6%]', isSmall ? 'w-[20%]' : 'w-[16%]')}
-          />
+          <SpecialDayBadge day={day} variant={isSmall ? 'compact' : 'full'} />
         ) : null;
       })()}
 

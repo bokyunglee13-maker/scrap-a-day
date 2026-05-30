@@ -146,15 +146,12 @@ export function StampPolaroid({
         </div>
       )}
 
-      {/* Special-day badge — TOP RIGHT corner of the polaroid frame. */}
+      {/* Special-day decoration — scattered stickers (compact / full). */}
       {(() => {
         const day = getSpecialDay(stamp.date);
         const isSmall = size === 'sm' || size === 'md' || size === 'full';
         return day ? (
-          <SpecialDayBadge
-            day={day}
-            className={cn('right-[6%] top-[5%]', isSmall ? 'w-[18%]' : 'w-[14%]')}
-          />
+          <SpecialDayBadge day={day} variant={isSmall ? 'compact' : 'full'} />
         ) : null;
       })()}
 

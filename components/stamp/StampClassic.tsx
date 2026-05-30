@@ -145,15 +145,12 @@ export function StampClassic({
         </div>
       )}
 
-      {/* Special-day badge — TOP RIGHT corner. Decorative, always shown on
-          special days regardless of style (PRD §5+ user feedback). */}
+      {/* Special-day decoration — set of scattered stickers per theme
+          (compact for calendar sizes, full at lg/xl). */}
       {(() => {
         const day = getSpecialDay(stamp.date);
         return day ? (
-          <SpecialDayBadge
-            day={day}
-            className={cn('right-[6%] top-[6%]', isSmall ? 'w-[20%]' : 'w-[16%]')}
-          />
+          <SpecialDayBadge day={day} variant={isSmall ? 'compact' : 'full'} />
         ) : null;
       })()}
 
