@@ -191,12 +191,14 @@ export default function BackgroundSettingsPage() {
           {/* Live preview */}
           <Preview color={color} />
 
-          {/* Quick-select presets */}
+          {/* Quick-select presets — compact 3-col grid so all 6 fit in a
+              single mobile viewport with the picker still visible below.
+              Size dropped from h-20/size-9 to h-14/size-7 + gap-2. */}
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-stamp-ink/60">
               자주 쓰는 색
             </h2>
-            <ul className="grid grid-cols-3 gap-3">
+            <ul className="grid grid-cols-3 gap-2">
               {PRESETS.map((p) => {
                 const active =
                   color.toUpperCase() === p.value.toUpperCase();
@@ -207,14 +209,14 @@ export default function BackgroundSettingsPage() {
                       onClick={() => void applyColor(p.value)}
                       aria-pressed={active}
                       className={cn(
-                        "flex h-20 w-full flex-col items-center justify-center gap-1 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "flex h-14 w-full flex-row items-center justify-center gap-1.5 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         active
                           ? "border-stamp-ink shadow-sm"
                           : "border-stamp-ink/15 hover:border-stamp-ink/40",
                       )}
                     >
                       <span
-                        className="size-9 rounded-full border border-stamp-ink/15"
+                        className="size-6 rounded-full border border-stamp-ink/15"
                         style={{ backgroundColor: p.value }}
                       />
                       <span className="text-xs text-stamp-ink/70">
@@ -227,7 +229,15 @@ export default function BackgroundSettingsPage() {
             </ul>
           </section>
 
-          {/* Native picker */}
+          {/* Native picker.
+              key={color} forces React to remount the input whenever the
+              color changes (preset tap, HEX submit, reset). Without the
+              remount, some mobile WebViews (Samsung Internet in
+              particular) ignore the React-controlled `value` and pop the
+              system picker open on whatever color it last cached —
+              usually black / red — instead of the currently-selected
+              color. defaultValue lets the freshly mounted uncontrolled
+              input adopt our state on first paint. */}
           <section className="flex flex-col gap-2">
             <h2 className="text-sm font-medium text-stamp-ink/60">
               직접 선택
@@ -237,8 +247,9 @@ export default function BackgroundSettingsPage() {
                 색상 picker 열기
               </span>
               <input
+                key={color}
                 type="color"
-                value={color}
+                defaultValue={color}
                 onChange={(e) => void applyColor(e.target.value.toUpperCase())}
                 aria-label="배경 색 picker"
                 className="size-10 cursor-pointer rounded border border-stamp-ink/20 bg-transparent p-0"
