@@ -24,6 +24,7 @@ export interface Stamp {
   mood: Mood | null;
   moodVisible: boolean;
   style: StampStyle;
+  companions?: string[]; // Phase 5+: 누구랑 함께한 날인지 (free-text tags)
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

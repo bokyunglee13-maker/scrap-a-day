@@ -8,6 +8,8 @@ import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getPerforationTeeth } from '@/lib/perforation';
+import { getSpecialDay } from '@/lib/specialDays';
+import { SpecialDayBadge } from './SpecialDayBadge';
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -80,6 +82,19 @@ export function EmptyStamp({
           <span className="font-sans text-sm text-mood-joy">오늘, 한 장</span>
         )}
       </div>
+
+      {/* Special-day badge — also rendered on empty cells so users notice the
+          day approaching (e.g., today is Valentine — register a memory!). */}
+      {(() => {
+        const day = getSpecialDay(date);
+        const isSmall = size === 'sm' || size === 'md' || size === 'full';
+        return day ? (
+          <SpecialDayBadge
+            day={day}
+            className={cn('right-[6%] top-[6%]', isSmall ? 'w-[20%]' : 'w-[16%]')}
+          />
+        ) : null;
+      })()}
 
       {/* Perforation overlay — no stroke for cleaner look. */}
       <svg

@@ -8,6 +8,8 @@ import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
+import { getSpecialDay } from '@/lib/specialDays';
+import { SpecialDayBadge } from './SpecialDayBadge';
 
 // Polaroid intentionally has NO perforation per PRD §03 §4.2 — the white
 // rectangular frame + handwritten caption is its visual signature, which
@@ -143,6 +145,18 @@ export function StampPolaroid({
           </p>
         </div>
       )}
+
+      {/* Special-day badge — TOP RIGHT corner of the polaroid frame. */}
+      {(() => {
+        const day = getSpecialDay(stamp.date);
+        const isSmall = size === 'sm' || size === 'md' || size === 'full';
+        return day ? (
+          <SpecialDayBadge
+            day={day}
+            className={cn('right-[6%] top-[5%]', isSmall ? 'w-[18%]' : 'w-[14%]')}
+          />
+        ) : null;
+      })()}
 
       {/* Mood dot — bottom right (over the caption area). Smaller at compact sizes. */}
       {showMoodDot && (

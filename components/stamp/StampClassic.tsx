@@ -9,6 +9,8 @@ import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { Stamp } from '@/types';
 import { getPerforationTeeth } from '@/lib/perforation';
+import { getSpecialDay } from '@/lib/specialDays';
+import { SpecialDayBadge } from './SpecialDayBadge';
 
 export type StampSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -142,6 +144,18 @@ export function StampClassic({
           </span>
         </div>
       )}
+
+      {/* Special-day badge — TOP RIGHT corner. Decorative, always shown on
+          special days regardless of style (PRD §5+ user feedback). */}
+      {(() => {
+        const day = getSpecialDay(stamp.date);
+        return day ? (
+          <SpecialDayBadge
+            day={day}
+            className={cn('right-[6%] top-[6%]', isSmall ? 'w-[20%]' : 'w-[16%]')}
+          />
+        ) : null;
+      })()}
 
       {/* Mood dot — BOTTOM RIGHT, uniform with Minimal and Polaroid. */}
       {showMoodDot && (
