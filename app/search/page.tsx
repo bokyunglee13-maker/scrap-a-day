@@ -1,17 +1,21 @@
 'use client';
 
 // app/search/page.tsx
-// Phase 5 — search by 함께한 사람 (companions) and/or 감정 (moods).
+// Phase 5+ — search by 함께한 사람 (companions) and/or 감정 (moods) within
+// a date range.
 //
 // URL state:
 //   ?companion=지수&companion=엄마  (OR within axis)
 //   ?mood=joy&mood=calm             (OR within axis, strict enum)
+//   ?range=1mo|3mo|6mo|1yr|all      (date floor; default 3mo)
 //   Across axes: AND.
 //
-// LoadState (PRD §11 §9.4.3):
-//   undefined → loading
-//   []        → empty (different copy depending on whether filters are set)
-//   Stamp[]   → success grid
+// IMPORTANT — reactivity:
+// dexie-react-hooks tracks Dexie operations performed DIRECTLY inside the
+// useLiveQuery callback. Awaiting an external async helper (e.g.
+// searchStamps()) does not propagate tracking. So this page inlines the
+// Dexie reads, which is the bug fix for #2/#3 (results / known-companions
+// not updating after a write).
 
 import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
@@ -20,10 +24,24 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft } from 'lucide-react';
 
 import { Stamp as StampView } from '@/components/stamp/Stamp';
-import { searchStamps, getAllCompanions } from '@/lib/stamps';
+import { db } from '@/lib/db';
 import { moodLabel } from '@/lib/retrospect';
+import {
+  DEFAULT_RANGE,
+  parseRangePreset,
+  RANGE_PRESET_LABEL,
+  rangePresetToFrom,
+  type RangePreset,
+} from '@/lib/dateGuards';
 import type { Mood } from '@/types';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const ALL_MOODS: Mood[] = ['joy', 'calm', 'serene', 'blue', 'flutter'];
 const MOOD_SET = new Set<Mood>(ALL_MOODS);
@@ -36,6 +54,8 @@ const MOOD_BG: Record<Mood, string> = {
   flutter: 'bg-mood-flutter',
 };
 
+const ALL_RANGES: RangePreset[] = ['1mo', '3mo', '6mo', '1yr', 'all'];
+
 function isMood(value: string): value is Mood {
   return MOOD_SET.has(value as Mood);
 }
@@ -44,7 +64,7 @@ function SearchInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Parse URL → filter state. dedupe on the read side; trim companion strings.
+  // Parse URL → filter state.
   const selectedCompanions = useMemo<string[]>(() => {
     const raw = searchParams.getAll('companion');
     return Array.from(
@@ -57,48 +77,104 @@ function SearchInner() {
     return Array.from(new Set(raw.filter(isMood)));
   }, [searchParams]);
 
+  const range = useMemo<RangePreset>(
+    () => parseRangePreset(searchParams.get('range')),
+    [searchParams],
+  );
+
   const hasAnyFilter =
     selectedCompanions.length > 0 || selectedMoods.length > 0;
 
-  // Companion universe — refreshes whenever stamps table changes.
+  // ---------------------------------------------------------------------------
+  // Live queries — INLINE Dexie reads (reactivity contract).
+  // ---------------------------------------------------------------------------
+
+  // Universe of recorded companion names (across all dates — no range filter
+  // so users can always filter to anyone they've ever tagged).
   const knownCompanions = useLiveQuery(async () => {
-    const res = await getAllCompanions();
-    return res.ok ? res.value : [];
+    const all = await db.stamps.toArray();
+    const set = new Set<string>();
+    for (const s of all) {
+      if (s.deletedAt !== null) continue;
+      for (const c of s.companions ?? []) {
+        const trimmed = c.trim();
+        if (trimmed) set.add(trimmed);
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'));
   }, []);
 
-  // Search results — re-runs whenever filters or stamps table change.
+  // Results — filtered by current URL state. Dependency string forces a
+  // re-subscribe whenever any filter axis changes.
+  const companionsKey = selectedCompanions.join('|');
+  const moodsKey = selectedMoods.join('|');
   const results = useLiveQuery(async () => {
-    const res = await searchStamps({
-      companions: selectedCompanions.length > 0 ? selectedCompanions : undefined,
-      moods: selectedMoods.length > 0 ? selectedMoods : undefined,
-    });
-    return res.ok ? res.value : [];
-  }, [selectedCompanions.join('|'), selectedMoods.join('|')]);
+    const all = await db.stamps.toArray();
+    const wantCompanions = selectedCompanions.length > 0
+      ? new Set(selectedCompanions)
+      : null;
+    const wantMoods = selectedMoods.length > 0
+      ? new Set(selectedMoods)
+      : null;
+    const from = rangePresetToFrom(range);
 
-  // Build the next URL with a toggled value on an axis. Preserves the other axis.
+    const matches = all.filter((s) => {
+      if (s.deletedAt !== null) return false;
+      if (from && s.date < from) return false;
+      if (wantCompanions) {
+        const cs = s.companions ?? [];
+        if (!cs.some((c) => wantCompanions.has(c))) return false;
+      }
+      if (wantMoods) {
+        if (s.mood === null || !wantMoods.has(s.mood)) return false;
+      }
+      return true;
+    });
+
+    matches.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    return matches;
+  }, [companionsKey, moodsKey, range]);
+
+  // ---------------------------------------------------------------------------
+  // URL helpers
+  // ---------------------------------------------------------------------------
+
+  const buildParams = (overrides: {
+    companions?: string[];
+    moods?: Mood[];
+    range?: RangePreset;
+  }): URLSearchParams => {
+    const next = new URLSearchParams();
+    const companions = overrides.companions ?? selectedCompanions;
+    const moods = overrides.moods ?? selectedMoods;
+    const r = overrides.range ?? range;
+    for (const c of companions) next.append('companion', c);
+    for (const m of moods) next.append('mood', m);
+    if (r !== DEFAULT_RANGE) next.set('range', r);
+    return next;
+  };
+
   const navigateWith = (params: URLSearchParams) => {
     const qs = params.toString();
     router.replace(qs ? `/search?${qs}` : '/search');
   };
 
   const toggleCompanion = (name: string) => {
-    const next = new URLSearchParams();
-    for (const m of selectedMoods) next.append('mood', m);
     const set = new Set(selectedCompanions);
     if (set.has(name)) set.delete(name);
     else set.add(name);
-    for (const c of set) next.append('companion', c);
-    navigateWith(next);
+    navigateWith(buildParams({ companions: Array.from(set) }));
   };
 
   const toggleMood = (mood: Mood) => {
-    const next = new URLSearchParams();
-    for (const c of selectedCompanions) next.append('companion', c);
     const set = new Set(selectedMoods);
     if (set.has(mood)) set.delete(mood);
     else set.add(mood);
-    for (const m of set) next.append('mood', m);
-    navigateWith(next);
+    navigateWith(buildParams({ moods: Array.from(set) }));
+  };
+
+  const handleRangeChange = (value: string) => {
+    navigateWith(buildParams({ range: parseRangePreset(value) }));
   };
 
   return (
@@ -116,7 +192,26 @@ function SearchInner() {
         </h1>
       </header>
 
-      {/* Companion filter section (omitted entirely when nothing recorded). */}
+      {/* Date range — affects how many photos are loaded. Default 3 months. */}
+      <section className="mt-6 flex items-center justify-between gap-3">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+          기간
+        </h2>
+        <Select value={range} onValueChange={handleRangeChange}>
+          <SelectTrigger className="h-10 min-w-32 text-base">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ALL_RANGES.map((r) => (
+              <SelectItem key={r} value={r}>
+                {RANGE_PRESET_LABEL[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </section>
+
+      {/* Companion filter section. */}
       {knownCompanions && knownCompanions.length > 0 && (
         <section className="mt-6 flex flex-col gap-2">
           <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
@@ -148,7 +243,7 @@ function SearchInner() {
       )}
       {knownCompanions && knownCompanions.length === 0 && (
         <p className="mt-6 text-sm text-stamp-ink/50">
-          기록된 사람이 없어요
+          아직 함께한 사람이 기록되지 않았어요
         </p>
       )}
 
@@ -202,18 +297,18 @@ function SearchInner() {
 
         {results !== undefined && results.length === 0 && hasAnyFilter && (
           <p className="text-sm text-stamp-ink/60">
-            조건에 맞는 우표가 없어요
+            {RANGE_PRESET_LABEL[range]} 기간에 조건에 맞는 우표가 없어요
           </p>
         )}
 
         {results !== undefined && results.length > 0 && (
           <>
             <p className="mb-3 text-xs text-stamp-ink/50">
-              {results.length}개
+              {results.length}개 · {RANGE_PRESET_LABEL[range]}
             </p>
             <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {results.map((s) => (
-                <li key={s.id}>
+                <li key={s.id} className="w-full">
                   <StampView
                     stamp={s}
                     size="full"

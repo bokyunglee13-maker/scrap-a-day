@@ -10,8 +10,6 @@
 // Existing stamps in past months still display and remain viewable / editable
 // from the detail screen. Only NEW registration on past-month dates is denied.
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -58,3 +56,44 @@ export const REGISTRATION_BLOCKED_MESSAGE = {
   future: "내일을 기다려요",
   pastMonth: "이 달의 기록만 채워볼까요",
 } as const;
+
+// -----------------------------------------------------------------------------
+// Search date-range presets (Phase 5+ — used by /search to bound the dataset)
+// -----------------------------------------------------------------------------
+
+export type RangePreset = "1mo" | "3mo" | "6mo" | "1yr" | "all";
+
+export const RANGE_PRESET_LABEL: Record<RangePreset, string> = {
+  "1mo": "최근 1개월",
+  "3mo": "최근 3개월",
+  "6mo": "최근 6개월",
+  "1yr": "최근 1년",
+  all: "전체",
+};
+
+export const DEFAULT_RANGE: RangePreset = "3mo";
+
+/**
+ * Convert a preset into a yyyy-MM-dd `from` date string (inclusive).
+ * Returns null for 'all' (no lower bound).
+ */
+export function rangePresetToFrom(
+  preset: RangePreset,
+  today: Date = new Date(),
+): string | null {
+  if (preset === "all") return null;
+  const months = preset === "1mo" ? 1 : preset === "3mo" ? 3 : preset === "6mo" ? 6 : 12;
+  const from = new Date(today.getFullYear(), today.getMonth() - months, today.getDate());
+  const yyyy = from.getFullYear();
+  const mm = String(from.getMonth() + 1).padStart(2, "0");
+  const dd = String(from.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export function parseRangePreset(value: string | null | undefined): RangePreset {
+  if (value === "1mo" || value === "3mo" || value === "6mo" || value === "1yr" || value === "all") {
+    return value;
+  }
+  return DEFAULT_RANGE;
+}
+

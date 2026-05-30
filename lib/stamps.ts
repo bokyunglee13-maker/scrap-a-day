@@ -269,15 +269,20 @@ export async function restoreStamp(id: string): Promise<Result<Stamp>> {
 }
 
 /**
- * Filter active stamps by companion(s) and/or mood(s).
- * - Both arrays optional. Empty arrays mean "no filter on this axis".
- * - When both are present: AND across axes. Within an axis, OR semantics
- *   (stamp matches if it contains ANY of the requested companions / moods).
+ * Filter active stamps by companion(s) and/or mood(s) and/or a from-date.
+ * - All filters optional. Empty arrays / undefined mean "no filter on this axis".
+ * - Across axes: AND. Within an axis: OR (any-of semantics).
+ * - `from` is yyyy-MM-dd inclusive; stamps with date < from are excluded.
  * - Returns newest date first.
+ *
+ * Note: callers that need LIVE reactivity (e.g. useLiveQuery) should inline
+ * the Dexie query rather than awaiting this wrapper — dexie-react-hooks
+ * does not propagate change-tracking across an awaited helper call.
  */
 export async function searchStamps(filter: {
   companions?: string[];
   moods?: Mood[];
+  from?: string;
 }): Promise<Result<Stamp[]>> {
   try {
     const all = await db.stamps.toArray();
@@ -285,9 +290,11 @@ export async function searchStamps(filter: {
       ? new Set(filter.companions)
       : null;
     const wantMoods = filter.moods?.length ? new Set(filter.moods) : null;
+    const fromDate = filter.from ?? null;
 
     const matches = all.filter((s) => {
       if (s.deletedAt !== null) return false;
+      if (fromDate && s.date < fromDate) return false;
       if (wantCompanions) {
         const stampCompanions = s.companions ?? [];
         const hit = stampCompanions.some((c) => wantCompanions.has(c));
@@ -299,7 +306,6 @@ export async function searchStamps(filter: {
       return true;
     });
 
-    // Sort newest date first (string comparison is correct for yyyy-MM-dd).
     matches.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
     return { ok: true, value: matches };
@@ -307,6 +313,7 @@ export async function searchStamps(filter: {
     await logError('searchStamps', e, {
       companionCount: filter.companions?.length ?? 0,
       moodCount: filter.moods?.length ?? 0,
+      from: filter.from ?? null,
     });
     return { ok: false, error: 'DB_ERROR' };
   }
