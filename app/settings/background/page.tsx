@@ -78,14 +78,15 @@ function normalizeColorInput(raw: string): string | null {
 function Preview({ color }: { color: string }) {
   return (
     <div
-      className="rounded-lg p-6 transition-colors"
+      className="flex items-center gap-3 rounded-lg p-3 transition-colors"
       style={{ backgroundColor: color }}
     >
-      <div className="mx-auto" style={{ width: 128 }}>
+      {/* Smaller preview stamp (was 128, now 56) so the whole page fits
+          on smaller mobile viewports (~640px tall) without scrolling.
+          Inline layout: stamp on the left, hex code on the right. */}
+      <div style={{ width: 56 }} className="shrink-0">
         <div className="relative aspect-[3/4] overflow-hidden rounded-sm bg-white shadow-sm">
-          {/* dotted inner border — mimics EmptyStamp */}
           <div className="pointer-events-none absolute inset-[6%] border border-dotted border-stamp-ink/40" />
-          {/* perforation overlay — sample circles, fill = chosen bg */}
           <svg
             aria-hidden
             className="pointer-events-none absolute inset-0"
@@ -93,14 +94,12 @@ function Preview({ color }: { color: string }) {
             viewBox="0 0 90 120"
             preserveAspectRatio="none"
           >
-            {/* top + bottom edges */}
             {[8, 22, 36, 50, 64, 78].map((cx) => (
               <circle key={`t-${cx}`} cx={cx} cy={0} r="3" />
             ))}
             {[8, 22, 36, 50, 64, 78].map((cx) => (
               <circle key={`b-${cx}`} cx={cx} cy={120} r="3" />
             ))}
-            {/* left + right edges */}
             {[8, 22, 36, 50, 64, 78, 92, 106].map((cy) => (
               <circle key={`l-${cy}`} cx={0} cy={cy} r="3" />
             ))}
@@ -110,9 +109,12 @@ function Preview({ color }: { color: string }) {
           </svg>
         </div>
       </div>
-      <p className="mt-3 text-center font-mono text-xs text-stamp-ink/55">
-        {color}
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-sm text-stamp-ink">{color}</p>
+        <p className="mt-0.5 text-xs text-stamp-ink/55">
+          미리보기 — 톱니가 배경과 같은 색
+        </p>
+      </div>
     </div>
   );
 }
@@ -187,18 +189,19 @@ export default function BackgroundSettingsPage() {
           불러오는 중…
         </p>
       ) : (
-        <div className="mt-6 flex flex-col gap-6">
-          {/* Live preview */}
+        <div className="mt-4 flex flex-col gap-3">
+          {/* Compact inline preview (stamp + hex side-by-side). */}
           <Preview color={color} />
 
-          {/* Quick-select presets — compact 3-col grid so all 6 fit in a
-              single mobile viewport with the picker still visible below.
-              Size dropped from h-20/size-9 to h-14/size-7 + gap-2. */}
-          <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium text-stamp-ink/60">
+          {/* Quick-select presets — 6 colors in a single row (grid-cols-6)
+              so they take only one short row, leaving vertical space for
+              the picker + HEX inputs below. Each cell becomes a small
+              tappable circle with the name tucked underneath. */}
+          <section className="flex flex-col gap-1.5">
+            <h2 className="text-xs font-medium text-stamp-ink/60">
               자주 쓰는 색
             </h2>
-            <ul className="grid grid-cols-3 gap-2">
+            <ul className="grid grid-cols-6 gap-1.5">
               {PRESETS.map((p) => {
                 const active =
                   color.toUpperCase() === p.value.toUpperCase();
@@ -208,8 +211,9 @@ export default function BackgroundSettingsPage() {
                       type="button"
                       onClick={() => void applyColor(p.value)}
                       aria-pressed={active}
+                      aria-label={p.label}
                       className={cn(
-                        "flex h-14 w-full flex-row items-center justify-center gap-1.5 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         active
                           ? "border-stamp-ink shadow-sm"
                           : "border-stamp-ink/15 hover:border-stamp-ink/40",
@@ -219,7 +223,7 @@ export default function BackgroundSettingsPage() {
                         className="size-6 rounded-full border border-stamp-ink/15"
                         style={{ backgroundColor: p.value }}
                       />
-                      <span className="text-xs text-stamp-ink/70">
+                      <span className="text-[10px] leading-none text-stamp-ink/70">
                         {p.label}
                       </span>
                     </button>
@@ -229,37 +233,31 @@ export default function BackgroundSettingsPage() {
             </ul>
           </section>
 
-          {/* Native picker.
-              key={color} forces React to remount the input whenever the
-              color changes (preset tap, HEX submit, reset). Without the
-              remount, some mobile WebViews (Samsung Internet in
-              particular) ignore the React-controlled `value` and pop the
-              system picker open on whatever color it last cached —
-              usually black / red — instead of the currently-selected
-              color. defaultValue lets the freshly mounted uncontrolled
-              input adopt our state on first paint. */}
-          <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium text-stamp-ink/60">
+          {/* Native picker (compact). key+defaultValue trick documented in
+              earlier commit — Samsung Internet ignores controlled value
+              on <input type="color">. */}
+          <section className="flex flex-col gap-1.5">
+            <h2 className="text-xs font-medium text-stamp-ink/60">
               직접 선택
             </h2>
-            <label className="flex items-center justify-between gap-3 rounded-md border border-stamp-ink/10 bg-white/40 px-4 py-3">
-              <span className="text-sm text-stamp-ink">
-                색상 picker 열기
-              </span>
+            <label className="flex items-center justify-between gap-3 rounded-md border border-stamp-ink/10 bg-white/40 px-3 py-2">
+              <span className="text-sm text-stamp-ink">색상 picker</span>
               <input
                 key={color}
                 type="color"
                 defaultValue={color}
                 onChange={(e) => void applyColor(e.target.value.toUpperCase())}
                 aria-label="배경 색 picker"
-                className="size-10 cursor-pointer rounded border border-stamp-ink/20 bg-transparent p-0"
+                className="size-9 cursor-pointer rounded border border-stamp-ink/20 bg-transparent p-0"
               />
             </label>
           </section>
 
-          {/* HEX / RGB text input */}
-          <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium text-stamp-ink/60">
+          {/* HEX / RGB text input. flex layout keeps input + 적용 button
+              on a single row at any viewport width. Input shrinks; button
+              stays compact (px-3 + text-sm). */}
+          <section className="flex flex-col gap-1.5">
+            <h2 className="text-xs font-medium text-stamp-ink/60">
               HEX 또는 RGB 코드
             </h2>
             <div className="flex gap-2">
@@ -273,13 +271,13 @@ export default function BackgroundSettingsPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleTextSubmit();
                 }}
-                placeholder="#FBEAF0 또는 rgb(251, 234, 240)"
-                className="h-11 flex-1 rounded-md border border-stamp-ink/20 bg-white px-3 text-base text-stamp-ink placeholder:text-stamp-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="#FBEAF0"
+                className="h-10 min-w-0 flex-1 rounded-md border border-stamp-ink/20 bg-white px-3 text-base text-stamp-ink placeholder:text-stamp-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <button
                 type="button"
                 onClick={handleTextSubmit}
-                className="inline-flex h-11 items-center rounded-md bg-stamp-ink px-4 text-sm font-medium text-stamp-paper hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-10 shrink-0 items-center rounded-md bg-stamp-ink px-3 text-sm font-medium text-stamp-paper hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 적용
               </button>
@@ -289,19 +287,13 @@ export default function BackgroundSettingsPage() {
             )}
           </section>
 
-          {/* Reset */}
           <button
             type="button"
             onClick={reset}
-            className="inline-flex h-11 items-center justify-center rounded-md border border-stamp-ink/15 text-sm text-stamp-ink/70 hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-stamp-ink/15 text-sm text-stamp-ink/70 hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             기본 색으로 되돌리기
           </button>
-
-          <p className="text-xs leading-relaxed text-stamp-ink/50">
-            배경 색을 바꾸면 우표 가장자리 톱니도 같은 색으로 변해요. 우표
-            안쪽은 항상 흰색이라 어떤 배경이든 사진이 잘 보입니다.
-          </p>
         </div>
       )}
     </main>
