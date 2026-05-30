@@ -23,6 +23,7 @@ export interface StampInput {
   moodVisible: boolean;
   style: StampStyle;
   companions?: string[];          // Phase 5: 함께한 사람들 (free-text tags)
+  hideSpecialDaySticker?: boolean; // post-MVP: per-stamp sticker on/off
 }
 
 /**
@@ -65,6 +66,7 @@ export async function createStamp(data: StampInput): Promise<Result<Stamp>> {
         moodVisible: data.moodVisible,
         style: data.style,
         companions: data.companions,
+        hideSpecialDaySticker: data.hideSpecialDaySticker,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -137,7 +139,7 @@ export async function getStampsByMonth(
  */
 export async function updateStamp(
   id: string,
-  patch: Partial<Pick<Stamp, 'memo' | 'mood' | 'moodVisible' | 'style' | 'crop' | 'companions'>>,
+  patch: Partial<Pick<Stamp, 'memo' | 'mood' | 'moodVisible' | 'style' | 'crop' | 'companions' | 'hideSpecialDaySticker'>>,
 ): Promise<Result<Stamp>> {
   try {
     const updated = await db.transaction('rw', db.stamps, async () => {

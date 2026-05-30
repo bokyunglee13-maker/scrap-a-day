@@ -150,8 +150,11 @@ export function StampClassic({
       )}
 
       {/* Special-day decoration — set of scattered stickers per theme
-          (compact for calendar sizes, full at lg/xl). */}
+          (compact for calendar sizes, full at lg/xl).
+          Hidden when the user toggled it off on this particular stamp
+          (registration form / detail page). */}
       {(() => {
+        if (stamp.hideSpecialDaySticker) return null;
         const day = getSpecialDay(stamp.date);
         return day ? (
           <SpecialDayBadge day={day} variant={isSmall ? 'compact' : 'full'} />

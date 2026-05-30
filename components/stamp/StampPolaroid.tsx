@@ -149,8 +149,10 @@ export function StampPolaroid({
         </div>
       )}
 
-      {/* Special-day decoration — scattered stickers (compact / full). */}
+      {/* Special-day decoration — scattered stickers (compact / full).
+          Per-stamp toggle: skip when user opted out for this stamp. */}
       {(() => {
+        if (stamp.hideSpecialDaySticker) return null;
         const day = getSpecialDay(stamp.date);
         const isSmall = size === 'sm' || size === 'md' || size === 'full';
         return day ? (

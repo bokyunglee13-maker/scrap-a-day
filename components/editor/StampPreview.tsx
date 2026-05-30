@@ -15,6 +15,9 @@ interface StampPreviewProps {
   mood: Mood | null;
   moodVisible: boolean;
   style: StampStyle;
+  /** If true, suppress the special-day sticker in the preview so the
+   *  user sees the same thing they'll get post-save. */
+  hideSpecialDaySticker?: boolean;
 }
 
 export function StampPreview({
@@ -25,6 +28,7 @@ export function StampPreview({
   mood,
   moodVisible,
   style,
+  hideSpecialDaySticker,
 }: StampPreviewProps) {
   const now = new Date();
   const draft: Stamp = {
@@ -36,6 +40,7 @@ export function StampPreview({
     mood,
     moodVisible,
     style,
+    hideSpecialDaySticker,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

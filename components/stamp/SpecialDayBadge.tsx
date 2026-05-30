@@ -1,46 +1,35 @@
-"use client";
-
 // components/stamp/SpecialDayBadge.tsx
 // Special-day decoration overlay — kitsch / illustrated sticker style.
 //
-// Visual language (post user feedback round 2):
+// Visual language:
 //   - Bold outline (stroke-width 0.7-1.2 on the main shape)
 //   - Single-fill colors (no gradients)
-//   - Round, chunky proportions (소박하면서 친근)
+//   - Round, chunky proportions
 //   - Small white highlight on top to suggest gloss
 //   - drop-shadow-sm on every SVG for a 'stuck on paper' feel
 //
-// Per-day user toggle (Phase 2):
-//   Each SpecialDay can be turned off via Settings → disabledSpecialDays[].
-//   forceShow=true bypasses the check (used by the settings preview).
+// Per-stamp toggle (Phase 3 redesign):
+//   Visibility is decided at the CALLER level — the Stamp components
+//   check stamp.hideSpecialDaySticker before mounting this component.
+//   Keeps SpecialDayBadge pure (server-renderable) and aligns with the
+//   user's preferred mental model: 'turn off the sticker on this
+//   particular photo' rather than 'turn off all 5/8 stickers forever'.
 
 import type { ReactElement } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 
 import type { SpecialDay } from "@/lib/specialDays";
 import { SPECIAL_DAY_LABEL } from "@/lib/specialDays";
-import { getSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 interface SpecialDayBadgeProps {
   day: SpecialDay;
   variant?: "compact" | "full";
-  forceShow?: boolean;
 }
 
 export function SpecialDayBadge({
   day,
   variant = "full",
-  forceShow = false,
 }: SpecialDayBadgeProps) {
-  const settingsResult = useLiveQuery(() => getSettings(), []);
-  const isDisabled =
-    !forceShow &&
-    settingsResult?.ok === true &&
-    Array.isArray(settingsResult.value.disabledSpecialDays) &&
-    settingsResult.value.disabledSpecialDays.includes(day);
-  if (isDisabled) return null;
-
   const stickers = variant === "compact" ? COMPACT[day] : FULL[day];
   return (
     <div

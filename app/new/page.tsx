@@ -44,11 +44,13 @@ import {
   CompanionPicker,
   type CompanionPickerHandle,
 } from '@/components/editor/CompanionPicker';
+import { Toggle } from '@/components/ui/Toggle';
 import { validatePhotoFile } from '@/lib/photoValidation';
 import { extractCroppedBlob } from '@/lib/imageProcessing';
 import { createStamp, type StampInput } from '@/lib/stamps';
 import { incrementFailed } from '@/lib/usage';
 import { isPastMonth, REGISTRATION_BLOCKED_MESSAGE } from '@/lib/dateGuards';
+import { getSpecialDay, SPECIAL_DAY_LABEL } from '@/lib/specialDays';
 import type { CropData, Mood, StampStyle } from '@/types';
 
 type Phase = 'pickPhoto' | 'crop' | 'meta';
@@ -147,8 +149,13 @@ function NewStampInner() {
   const [moodVisible, setMoodVisible] = useState<boolean>(true);
   const [style, setStyle] = useState<StampStyle>('minimal');
   const [companions, setCompanions] = useState<string[]>([]);
+  const [hideSpecialDaySticker, setHideSpecialDaySticker] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+
+  // Detect special day for this stamp's date so we can show the
+  // sticker toggle only when it's actually relevant.
+  const specialDay = useMemo(() => getSpecialDay(date), [date]);
 
   // Two separate hidden inputs — one forces camera (capture="environment"),
   // one defaults to the OS photo picker (no capture attr). Without two inputs,
@@ -267,6 +274,9 @@ function NewStampInner() {
         style,
         // Empty array → omit so the field stays absent from storage.
         companions: finalCompanions.length > 0 ? finalCompanions : undefined,
+        // Only persist when true — `false` is the default behavior so storing
+        // it explicitly would just bloat the row.
+        hideSpecialDaySticker: hideSpecialDaySticker || undefined,
       };
       const result = await createStamp(input);
       if (result.ok) {
@@ -406,6 +416,7 @@ function NewStampInner() {
               mood={mood}
               moodVisible={moodVisible}
               style={style}
+              hideSpecialDaySticker={hideSpecialDaySticker}
             />
 
             <div className="flex justify-center">
@@ -454,6 +465,36 @@ function NewStampInner() {
               </h2>
               <MemoInput value={memo} onChange={setMemo} />
             </section>
+
+            {/* Special-day sticker toggle — only when this date actually has
+                one. Lets users see the photo with the sticker overlay in
+                the preview above and decide whether to keep or skip it. */}
+            {specialDay && (
+              <section className="flex flex-col gap-2">
+                <h2 className="text-sm font-medium text-stamp-ink/60">
+                  특별한 날 스티커
+                </h2>
+                <div className="flex items-center justify-between rounded-md border border-stamp-ink/10 bg-white/40 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-stamp-ink">
+                      {SPECIAL_DAY_LABEL[specialDay]} 스티커
+                    </p>
+                    <p className="mt-0.5 text-xs text-stamp-ink/50">
+                      {hideSpecialDaySticker
+                        ? "이 우표엔 스티커가 안 보여요"
+                        : "이 우표에 스티커가 보여요"}
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={!hideSpecialDaySticker}
+                    onChange={() =>
+                      setHideSpecialDaySticker((prev) => !prev)
+                    }
+                    label="특별한 날 스티커 토글"
+                  />
+                </div>
+              </section>
+            )}
           </div>
         )}
       </section>

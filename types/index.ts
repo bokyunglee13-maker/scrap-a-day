@@ -25,6 +25,13 @@ export interface Stamp {
   moodVisible: boolean;
   style: StampStyle;
   companions?: string[]; // Phase 5+: 누구랑 함께한 날인지 (free-text tags)
+  /**
+   * If true, suppress the special-day sticker (e.g. carnation, balloon)
+   * on THIS stamp even when the date matches a SpecialDay. User-controlled
+   * per-stamp via the registration form and the detail page.
+   * undefined or false = sticker shown (default).
+   */
+  hideSpecialDaySticker?: boolean;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

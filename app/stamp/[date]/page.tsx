@@ -24,15 +24,19 @@ import {
   MessageSquare,
   Palette,
   Sparkles,
+  Sticker,
   Trash2,
   Users,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Stamp as StampView } from '@/components/stamp/Stamp';
 import { useStampByDate } from '@/hooks/useStamp';
 import type { Mood, Stamp } from '@/types';
 import { cn } from '@/lib/utils';
+import { getSpecialDay, SPECIAL_DAY_LABEL } from '@/lib/specialDays';
+import { updateStamp } from '@/lib/stamps';
 
 import { EditMemoDialog } from '@/components/editor/EditMemoDialog';
 import { EditMoodDialog } from '@/components/editor/EditMoodDialog';
@@ -264,6 +268,34 @@ function StampDetailView({ stamp }: { stamp: Stamp }) {
           label="함께한 사람"
           onClick={() => setCompanionsOpen(true)}
         />
+        {/* Sticker toggle — only when this date is a special day. Toggles
+            the per-stamp hideSpecialDaySticker flag. Uses updateStamp so
+            the change persists to IndexedDB + Supabase sync. */}
+        {(() => {
+          const day = getSpecialDay(stamp.date);
+          if (!day) return null;
+          const hidden = stamp.hideSpecialDaySticker === true;
+          return (
+            <ActionButton
+              icon={<Sticker className="size-4" />}
+              label={hidden ? '스티커 보이기' : '스티커 숨기기'}
+              onClick={async () => {
+                const res = await updateStamp(stamp.id, {
+                  hideSpecialDaySticker: !hidden,
+                });
+                if (!res.ok) {
+                  toast.error('저장 중 문제가 생겼어요');
+                  return;
+                }
+                toast.success(
+                  !hidden
+                    ? `${SPECIAL_DAY_LABEL[day]} 스티커가 숨겨졌어요`
+                    : `${SPECIAL_DAY_LABEL[day]} 스티커가 보여요`,
+                );
+              }}
+            />
+          );
+        })()}
         <ExportStamp stamp={stamp} />
         <Button
           type="button"
