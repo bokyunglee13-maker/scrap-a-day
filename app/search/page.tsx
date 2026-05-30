@@ -24,6 +24,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ChevronLeft } from 'lucide-react';
 
 import { Stamp as StampView } from '@/components/stamp/Stamp';
+import { ExportSearch } from '@/components/share/ExportSearch';
 import { db } from '@/lib/db';
 import { moodLabel } from '@/lib/retrospect';
 import {
@@ -214,17 +215,28 @@ function SearchInner() {
 
   return (
     <main className="mx-auto max-w-md px-4 py-6">
-      <header className="flex items-center gap-2">
-        <Link
-          href="/settings"
-          aria-label="설정으로"
-          className="-ml-2 inline-flex size-11 items-center justify-center rounded-sm text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ChevronLeft className="size-5" />
-        </Link>
-        <h1 className="font-serif text-lg font-medium text-stamp-ink md:text-xl">
-          검색
-        </h1>
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings"
+            aria-label="설정으로"
+            className="-ml-2 inline-flex size-11 items-center justify-center rounded-sm text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronLeft className="size-5" />
+          </Link>
+          <h1 className="font-serif text-lg font-medium text-stamp-ink md:text-xl">
+            검색
+          </h1>
+        </div>
+        {/* Download / share — disabled when no filter active or no results.
+            The opacity-30 disabled state hints 'select something first'. */}
+        <ExportSearch
+          stamps={results ?? []}
+          selectedCompanions={selectedCompanions}
+          selectedMoods={selectedMoods}
+          range={range}
+          disabled={!hasAnyFilter}
+        />
       </header>
 
       {/* Date range — affects how many photos are loaded. Default 3 months.
