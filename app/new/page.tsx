@@ -152,6 +152,11 @@ function NewStampInner() {
   const [hideSpecialDaySticker, setHideSpecialDaySticker] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+  // Cropped blob for the meta-phase preview. Computed via the same
+  // extractCroppedBlob path used at save time, so what the user sees
+  // matches what they'll get. Re-computed whenever they return to
+  // crop and adjust (phase flips meta → crop → meta).
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
 
   // Detect special day for this stamp's date so we can show the
   // sticker toggle only when it's actually relevant.
@@ -176,6 +181,30 @@ function NewStampInner() {
       URL.revokeObjectURL(photoUrl);
     };
   }, [photoUrl]);
+
+  // Recompute the preview blob whenever the user lands in the meta phase
+  // with a fresh crop. Same canvas extraction path used at save time, so
+  // the preview is pixel-accurate. Failure is non-fatal — we fall back to
+  // the original file in the preview render below.
+  useEffect(() => {
+    if (phase !== 'meta' || !photoFile) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const blob = await extractCroppedBlob(photoFile, crop.pixelArea);
+        if (!cancelled) setPreviewBlob(blob);
+      } catch {
+        // crop.pixelArea may be empty if onCropComplete never fired
+        // (e.g. user jumped phases). Leave previewBlob as-is; the
+        // StampPreview falls back to photoFile.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, photoFile, crop.pixelArea]);
 
   const isDirty =
     photoFile !== null ||
@@ -404,7 +433,9 @@ function NewStampInner() {
           <div className="flex flex-col gap-6">
             <StampPreview
               date={date}
-              photoBlob={photoFile}
+              // Cropped blob if extraction succeeded; otherwise fall back to
+              // the raw file so the preview is never empty.
+              photoBlob={previewBlob ?? photoFile}
               crop={{
                 x: crop.x,
                 y: crop.y,
@@ -429,46 +460,16 @@ function NewStampInner() {
               </button>
             </div>
 
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-stamp-ink/60">
-                스타일
-              </h2>
-              <StylePicker value={style} onChange={setStyle} />
-            </section>
-
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-stamp-ink/60">
-                감정
-              </h2>
-              <MoodPicker
-                value={mood}
-                onChange={setMood}
-                visible={moodVisible}
-                onVisibleChange={setMoodVisible}
-              />
-            </section>
-
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-stamp-ink/60">
-                함께한 사람
-              </h2>
-              <CompanionPicker
-                ref={companionPickerRef}
-                value={companions}
-                onChange={setCompanions}
-              />
-            </section>
-
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-stamp-ink/60">
-                메모
-              </h2>
-              <MemoInput value={memo} onChange={setMemo} />
-            </section>
-
-            {/* Special-day sticker toggle — only when this date actually has
-                one. Lets users see the photo with the sticker overlay in
-                the preview above and decide whether to keep or skip it. */}
+            {/* Section order (post user feedback):
+                  1. 특별한 날 스티커 — most photo-dependent decision, so
+                     it sits closest to the preview where the user can see
+                     the sticker on / off effect in real time.
+                  2. 감정
+                  3. 함께한 사람
+                  4. 스타일
+                  5. 메모
+                Style and memo move down because they're less coupled to
+                what the user is looking at in the preview. */}
             {specialDay && (
               <section className="flex flex-col gap-2">
                 <h2 className="text-sm font-medium text-stamp-ink/60">
@@ -495,6 +496,43 @@ function NewStampInner() {
                 </div>
               </section>
             )}
+
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
+                감정
+              </h2>
+              <MoodPicker
+                value={mood}
+                onChange={setMood}
+                visible={moodVisible}
+                onVisibleChange={setMoodVisible}
+              />
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
+                함께한 사람
+              </h2>
+              <CompanionPicker
+                ref={companionPickerRef}
+                value={companions}
+                onChange={setCompanions}
+              />
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
+                스타일
+              </h2>
+              <StylePicker value={style} onChange={setStyle} />
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
+                메모
+              </h2>
+              <MemoInput value={memo} onChange={setMemo} />
+            </section>
           </div>
         )}
       </section>
