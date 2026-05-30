@@ -142,7 +142,8 @@
   --color-stamp-paper: #fbeaf0;
   --color-stamp-ink: #4b1528;
 
-  --font-sans: var(--font-noto-sans-kr), sans-serif;
+  /* Paperlogy as the primary sans face (Phase 6 user preference). */
+  --font-sans: var(--font-paperlogy), sans-serif;
   --font-serif: var(--font-crimson), serif;
   --font-handwriting: var(--font-caveat), cursive;
 }

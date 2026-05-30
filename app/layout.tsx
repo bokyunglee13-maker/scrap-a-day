@@ -1,15 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR, Crimson_Pro, Caveat } from "next/font/google";
+import localFont from "next/font/local";
+import { Crimson_Pro, Caveat } from "next/font/google";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorListeners } from "@/components/ErrorListeners";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const notoSansKr = Noto_Sans_KR({
-  variable: "--font-noto-sans-kr",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+// Paperlogy — self-hosted Korean sans family. Replaces Noto Sans KR as the
+// primary sans face per user preference. Three weights loaded (Regular/Medium/
+// Bold) to cover the design system's needs while keeping the font payload
+// modest (~4MB total in .ttf — .woff2 would compress further, future polish).
+const paperlogy = localFont({
+  variable: "--font-paperlogy",
   display: "swap",
+  src: [
+    { path: "../public/fonts/paperlogy/Paperlogy-4Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/paperlogy/Paperlogy-5Medium.ttf", weight: "500", style: "normal" },
+    { path: "../public/fonts/paperlogy/Paperlogy-7Bold.ttf", weight: "700", style: "normal" },
+  ],
 });
 
 const crimsonPro = Crimson_Pro({
@@ -61,7 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${notoSansKr.variable} ${crimsonPro.variable} ${caveat.variable} h-full antialiased`}
+      className={`${paperlogy.variable} ${crimsonPro.variable} ${caveat.variable} h-full antialiased`}
     >
       <body
         className="min-h-full flex flex-col font-sans bg-stamp-paper text-stamp-ink"
