@@ -17,7 +17,7 @@
 // Dexie reads, which is the bug fix for #2/#3 (results / known-companions
 // not updating after a write).
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -84,6 +84,21 @@ function SearchInner() {
 
   const hasAnyFilter =
     selectedCompanions.length > 0 || selectedMoods.length > 0;
+
+  // Auto-scroll to results when filters change so the user sees their hits
+  // immediately instead of having to scroll past the filter chips.
+  const resultsRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!hasAnyFilter) return;
+    // Defer a tick so the layout settles after the URL replace re-render.
+    const id = window.setTimeout(() => {
+      resultsRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [hasAnyFilter, selectedCompanions.join('|'), selectedMoods.join('|')]);
 
   // ---------------------------------------------------------------------------
   // Live queries — INLINE Dexie reads (reactivity contract).
@@ -284,7 +299,7 @@ function SearchInner() {
       </section>
 
       {/* Results. */}
-      <section className="mt-8">
+      <section ref={resultsRef} className="mt-8 scroll-mt-4">
         {results === undefined && (
           <p className="text-sm text-stamp-ink/50">검색 중…</p>
         )}
@@ -304,14 +319,19 @@ function SearchInner() {
         {results !== undefined && results.length > 0 && (
           <>
             <p className="mb-3 text-xs text-stamp-ink/50">
-              {results.length}개 · {RANGE_PRESET_LABEL[range]}
+              ↓ {results.length}개 · {RANGE_PRESET_LABEL[range]}
             </p>
-            {/* 2-col mobile / 3-col sm+ so each stamp is large enough to read.
-                Explicit aspect-[3/4] on the li guarantees a sized box even if
-                the Stamp inner ever fails to mount. */}
+            {/* 2-col mobile / 3-col sm+ — each stamp ~165px wide on a typical
+                phone so the photo is actually legible. Explicit aspect-[3/4]
+                on the li guarantees a sized grid cell even if the Stamp inner
+                were to fail (previously the li had only w-full and would
+                collapse to 0 height when a sibling layout shifted). */}
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {results.map((s) => (
-                <li key={s.id} className="w-full">
+                <li
+                  key={s.id}
+                  className="block aspect-[3/4] w-full"
+                >
                   <StampView
                     stamp={s}
                     size="full"
