@@ -111,10 +111,16 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
       try {
         await waitForImages(offscreenRef.current);
         if (cancelled) return;
+        // skipFonts removed — earlier we set it true to avoid suspected
+        // Google Fonts CORS fetches during export. In practice next/font
+        // (both /google and /local) self-hosts under same-origin, so the
+        // embed path is safe AND necessary: without embed, iOS Safari can
+        // fall back to system sans when rendering the SVG foreignObject,
+        // which would make the PNG show a different typeface than the live
+        // page. Embed → Paperlogy / Crimson Pro / Caveat all guaranteed.
         const dataUrl = await toPng(offscreenRef.current, {
           pixelRatio: 2,
           backgroundColor: STAMP_PAPER,
-          skipFonts: true,
         });
         const mm = String(month).padStart(2, "0");
         const filename = `scrap-a-day-${year}-${mm}.png`;
