@@ -166,11 +166,11 @@ function SearchInner() {
     navigateWith(buildParams({ companions: Array.from(set) }));
   };
 
+  // Single-select per user feedback. Tapping the active mood clears it;
+  // tapping a different mood replaces the selection.
   const toggleMood = (mood: Mood) => {
-    const set = new Set(selectedMoods);
-    if (set.has(mood)) set.delete(mood);
-    else set.add(mood);
-    navigateWith(buildParams({ moods: Array.from(set) }));
+    const next: Mood[] = selectedMoods.includes(mood) ? [] : [mood];
+    navigateWith(buildParams({ moods: next }));
   };
 
   const handleRangeChange = (value: string) => {
@@ -306,7 +306,10 @@ function SearchInner() {
             <p className="mb-3 text-xs text-stamp-ink/50">
               {results.length}개 · {RANGE_PRESET_LABEL[range]}
             </p>
-            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {/* 2-col mobile / 3-col sm+ so each stamp is large enough to read.
+                Explicit aspect-[3/4] on the li guarantees a sized box even if
+                the Stamp inner ever fails to mount. */}
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {results.map((s) => (
                 <li key={s.id} className="w-full">
                   <StampView
