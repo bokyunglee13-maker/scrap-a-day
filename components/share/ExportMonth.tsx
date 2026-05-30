@@ -1,15 +1,22 @@
 "use client";
 
 // components/share/ExportMonth.tsx
-// Phase 6 — Export the current month as a PNG with a dedicated poster-style
-// layout (MonthExportLayout). Then hand off to Web Share API (mobile = Insta /
-// KakaoTalk / etc. via system share sheet) or trigger a download (desktop).
+// Phase 6 + polish — Export the current month as a PNG via a poster-style
+// offscreen layout (MonthExportLayout).
 //
-// Why mount-on-demand instead of always-present offscreen replica:
-// Each stamp creates a blob: URL for its photo. Keeping a full offscreen
-// duplicate of the month doubles memory (~15MB for 30 stamps with originals).
-// Mount only while exporting; useEffect waits for images to load before
-// calling toPng.
+// Two-step UX (changed from share-only):
+//   1. Always download the file (a.click) → on Android this lands in the
+//      Downloads folder and the system 갤러리 picks it up automatically.
+//      On iOS it lands in Files; users can move it to Photos manually or use
+//      the share action below.
+//   2. Surface a follow-up toast with an optional "공유하기" action that
+//      invokes navigator.share with the file. Lets users post to KakaoTalk /
+//      Instagram / etc. in one tap.
+//
+// Bug fix: previously the offscreen layout called useLiveQuery internally,
+// so toPng often ran before the stamps arrived → blank-cell PNG. We now
+// fetch the stamps up-front in this component and only mount the layout
+// when the data is ready.
 
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
@@ -17,6 +24,8 @@ import { toast } from "sonner";
 import { Download } from "lucide-react";
 
 import { MonthExportLayout } from "./MonthExportLayout";
+import { db } from "@/lib/db";
+import type { Stamp } from "@/types";
 
 const STAMP_PAPER = "#fbeaf0";
 
@@ -24,6 +33,8 @@ interface ExportMonthProps {
   year: number;
   month: number; // 1-12
 }
+
+type Phase = "idle" | "loading" | "rendering";
 
 /**
  * Wait for every <img> in `root` to either load or fail. 5-second per-image
@@ -52,32 +63,13 @@ async function waitForImages(root: HTMLElement): Promise<void> {
   await Promise.all(waits);
 }
 
-async function shareOrDownload(
-  dataUrl: string,
-  filename: string,
-): Promise<boolean> {
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-    try {
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], filename, { type: "image/png" });
-      if (
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ files: [file] })
-      ) {
-        try {
-          await navigator.share({ files: [file], title: "Scrap a Day" });
-          return true;
-        } catch (e) {
-          if (e instanceof Error && e.name === "AbortError") return true;
-          // Fall through to download.
-        }
-      }
-    } catch {
-      // Fall through.
-    }
-  }
-
+/**
+ * Trigger an actual file download via an anchor click. On Android this writes
+ * to the Downloads directory (visible in 갤러리 → Downloads album). On iOS
+ * Safari this routes through the Files app — Photos saves go through the
+ * share-action toast below.
+ */
+function triggerDownload(dataUrl: string, filename: string): boolean {
   try {
     const a = document.createElement("a");
     a.href = dataUrl;
@@ -91,21 +83,82 @@ async function shareOrDownload(
   }
 }
 
+/**
+ * Build an optional share-action descriptor for the success toast. Returns
+ * undefined when navigator.share / canShare isn't available, so the toast
+ * simply omits the button in that case (e.g. desktop Chrome).
+ */
+async function buildShareAction(
+  dataUrl: string,
+  filename: string,
+): Promise<{ label: string; onClick: () => void } | undefined> {
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+    return undefined;
+  }
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], filename, { type: "image/png" });
+    if (
+      typeof navigator.canShare === "function" &&
+      !navigator.canShare({ files: [file] })
+    ) {
+      return undefined;
+    }
+    return {
+      label: "공유하기",
+      onClick: () => {
+        void navigator
+          .share({ files: [file], title: "Scrap a Day" })
+          .catch(() => {
+            /* user cancelled or share failed silently — no-op. */
+          });
+      },
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export function ExportMonth({ year, month }: ExportMonthProps) {
   const offscreenRef = useRef<HTMLDivElement | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [stamps, setStamps] = useState<Stamp[]>([]);
 
-  // When `exporting` flips true, the offscreen layout mounts; this effect
-  // then waits for images and runs toPng, then cleans up.
+  // Click → fetch stamps for this month, then flip to 'rendering' which
+  // mounts the offscreen layout. The render effect below handles toPng.
+  const handleClick = async () => {
+    if (phase !== "idle") return;
+    setPhase("loading");
+    try {
+      const mm = String(month).padStart(2, "0");
+      const lower = `${year}-${mm}-00`;
+      const upper = `${year}-${mm}-32`;
+      const all = await db.stamps
+        .where("date")
+        .between(lower, upper, false, false)
+        .and((s) => s.deletedAt === null)
+        .toArray();
+      setStamps(all);
+      setPhase("rendering");
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("ExportMonth fetch failed:", e);
+      toast.error("우표 데이터를 불러오지 못했어요");
+      setPhase("idle");
+    }
+  };
+
+  // When `phase` flips to 'rendering', the offscreen layout mounts; this
+  // effect then waits for images and runs toPng, then cleans up.
   useEffect(() => {
-    if (!exporting) return;
+    if (phase !== "rendering") return;
     let cancelled = false;
 
     void (async () => {
       // Give React a frame to commit the offscreen mount.
       await new Promise((r) => requestAnimationFrame(() => r(undefined)));
       if (cancelled || !offscreenRef.current) {
-        setExporting(false);
+        setPhase("idle");
         return;
       }
       try {
@@ -117,20 +170,28 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
         // embed path is safe AND necessary: without embed, iOS Safari can
         // fall back to system sans when rendering the SVG foreignObject,
         // which would make the PNG show a different typeface than the live
-        // page. Embed → Paperlogy / Crimson Pro / Caveat all guaranteed.
+        // page. Embed → Paperlogy guaranteed.
         const dataUrl = await toPng(offscreenRef.current, {
           pixelRatio: 2,
           backgroundColor: STAMP_PAPER,
         });
         const mm = String(month).padStart(2, "0");
         const filename = `scrap-a-day-${year}-${mm}.png`;
-        const ok = await shareOrDownload(dataUrl, filename);
+
+        const downloaded = triggerDownload(dataUrl, filename);
         if (cancelled) return;
-        if (ok) {
-          toast.success("이미지를 저장했어요");
-        } else {
+        if (!downloaded) {
           toast.error("다운로드가 차단됐어요. 팝업을 허용해주세요.");
+          return;
         }
+
+        // Optional share follow-up (no-op when not supported).
+        const shareAction = await buildShareAction(dataUrl, filename);
+        if (cancelled) return;
+        toast.success("이미지를 저장했어요", {
+          duration: 7000,
+          action: shareAction,
+        });
       } catch (e) {
         if (cancelled) return;
         const msg = e instanceof Error ? e.message : String(e);
@@ -138,30 +199,35 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
         // eslint-disable-next-line no-console
         console.error("ExportMonth toPng failed:", e);
       } finally {
-        if (!cancelled) setExporting(false);
+        if (!cancelled) {
+          setPhase("idle");
+          setStamps([]);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [exporting, year, month]);
+  }, [phase, year, month]);
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setExporting(true)}
-        disabled={exporting}
+        onClick={handleClick}
+        disabled={phase !== "idle"}
         aria-label="이 달 이미지 저장"
         className="inline-flex size-11 items-center justify-center rounded-sm p-2 text-stamp-ink/70 hover:bg-stamp-ink/5 hover:text-stamp-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
       >
         <Download className="size-5" />
       </button>
 
-      {/* Mount the offscreen export replica only while exporting. Saves the
-          ~15MB blob URL memory cost during normal browsing. */}
-      {exporting && (
+      {/* Mount the offscreen export replica only while rendering. Saves the
+          ~15MB blob URL memory cost during normal browsing. Stamps come from
+          the up-front fetch in handleClick, so the data is guaranteed ready
+          when MonthExportLayout mounts (no more empty-cell PNG bug). */}
+      {phase === "rendering" && (
         <div
           aria-hidden
           style={{
@@ -172,7 +238,7 @@ export function ExportMonth({ year, month }: ExportMonthProps) {
           }}
         >
           <div ref={offscreenRef}>
-            <MonthExportLayout year={year} month={month} />
+            <MonthExportLayout year={year} month={month} stamps={stamps} />
           </div>
         </div>
       )}

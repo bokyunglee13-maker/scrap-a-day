@@ -36,10 +36,13 @@ export function getHookMessage(ctx: HookContext): string {
   if (ctx.emptyStreak >= 3) return "괜찮아요, 천천히 채워도 돼요";
   if (ctx.daysAgo >= 3) return "지난 날을 떠올려볼까요?";
 
-  // Today / time-of-day fallbacks
-  if (ctx.hour >= 22) return "오늘이 가기 전에";
-  if (ctx.hour >= 18) return "오늘은 어떤 하루였어요?";
-  return "오늘, 한 장";
+  // Today / time-of-day fallbacks.
+  // The 18~22h hint uses explicit \n breaks because the cell is narrow (~45px wide
+  // on mobile) and the auto-wrap was chopping at awkward syllable boundaries
+  // ("오늘은 어" / "떤 하루였" / "어요?"). 3 짧은 줄로 강제하면 시각적으로 정돈됨.
+  if (ctx.hour >= 22) return "오늘이\n가기 전에";
+  if (ctx.hour >= 18) return "오늘은\n어떤 하루\n였나요?";
+  return "오늘,\n한 장";
 }
 
 /**

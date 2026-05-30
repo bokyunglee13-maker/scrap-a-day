@@ -142,8 +142,14 @@
   --color-stamp-paper: #fbeaf0;
   --color-stamp-ink: #4b1528;
 
-  /* Paperlogy as the primary sans face (Phase 6 user preference). */
+  /* Paperlogy is the SOLE font face across the app (user preference, post-Phase 6).
+     font-sans / font-serif / font-handwriting all alias to it so that any class
+     in the codebase — including those still tagged with font-serif (e.g. month
+     headers, "이 달의 기록") or font-handwriting (e.g. login hero text, "오늘, 한 장")
+     — renders in Paperlogy with zero per-component changes.
+     Crimson Pro and Caveat are still loaded in layout.tsx for now; removing the
+     imports is a v1.1 polish item (saves ~150-200KB on first paint). */
   --font-sans: var(--font-paperlogy), sans-serif;
-  --font-serif: var(--font-crimson), serif;
-  --font-handwriting: var(--font-caveat), cursive;
+  --font-serif: var(--font-paperlogy), sans-serif;
+  --font-handwriting: var(--font-paperlogy), sans-serif;
 }

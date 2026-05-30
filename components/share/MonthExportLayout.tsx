@@ -12,8 +12,13 @@
 // Reuses the existing Stamp / EmptyStamp components, so the painted-teeth and
 // special-day decorations the user worked on come through to the PNG exactly
 // as they appear in the app.
+//
+// Bug fix (post Phase 6 mark): stamps are now passed in as a prop instead of
+// fetched via useLiveQuery. Reason — useLiveQuery resolves asynchronously,
+// and the parent's toPng call was firing before the data arrived, producing a
+// PNG full of empty cells. The parent (ExportMonth) now fetches once up-front
+// and only mounts this layout when the data is in hand.
 
-import { useLiveQuery } from "dexie-react-hooks";
 import {
   eachDayOfInterval,
   endOfMonth,
@@ -23,8 +28,8 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { db } from "@/lib/db";
-import { Stamp, EmptyStamp } from "@/components/stamp/Stamp";
+import { Stamp as StampComponent, EmptyStamp } from "@/components/stamp/Stamp";
+import type { Stamp } from "@/types";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 const EXPORT_WIDTH = 720; // px — locked so the PNG is consistent across devices
@@ -32,23 +37,14 @@ const EXPORT_WIDTH = 720; // px — locked so the PNG is consistent across devic
 interface MonthExportLayoutProps {
   year: number;
   month: number; // 1-12
+  /** Pre-fetched stamps for this month (deletedAt === null already filtered).
+   *  Passing as a prop guarantees the data is ready before render — critical
+   *  for the offscreen toPng capture. */
+  stamps: Stamp[];
 }
 
-export function MonthExportLayout({ year, month }: MonthExportLayoutProps) {
+export function MonthExportLayout({ year, month, stamps }: MonthExportLayoutProps) {
   const monthAnchor = new Date(year, month - 1, 1);
-
-  // Inline query (same reactivity contract as the search page).
-  const stamps = useLiveQuery(async () => {
-    const mm = String(month).padStart(2, "0");
-    const lower = `${year}-${mm}-00`;
-    const upper = `${year}-${mm}-32`;
-    const all = await db.stamps
-      .where("date")
-      .between(lower, upper, false, false)
-      .and((s) => s.deletedAt === null)
-      .toArray();
-    return all;
-  }, [year, month]);
 
   // 7×N Monday-start grid covering the whole month.
   const cells = (() => {
@@ -59,11 +55,11 @@ export function MonthExportLayout({ year, month }: MonthExportLayoutProps) {
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
   })();
 
-  const stampByIso = new Map<string, NonNullable<typeof stamps>[number]>();
-  if (stamps) for (const s of stamps) stampByIso.set(s.date, s);
+  const stampByIso = new Map<string, Stamp>();
+  for (const s of stamps) stampByIso.set(s.date, s);
 
   const totalDays = getDaysInMonth(monthAnchor);
-  const filledCount = stamps?.length ?? 0;
+  const filledCount = stamps.length;
   const monthIndex0 = month - 1;
 
   return (
@@ -71,7 +67,8 @@ export function MonthExportLayout({ year, month }: MonthExportLayoutProps) {
       className="bg-stamp-paper"
       style={{ width: EXPORT_WIDTH, padding: 40 }}
     >
-      {/* Header — large serif year+month, dotted divider, signature wordmark */}
+      {/* Header — large year+month, dotted divider, signature wordmark.
+          font-serif still tagged but now aliased to Paperlogy globally. */}
       <header className="text-center">
         <h1 className="font-serif text-stamp-ink" style={{ fontSize: 44, lineHeight: 1.1 }}>
           {year}년 {month}월
@@ -121,7 +118,7 @@ export function MonthExportLayout({ year, month }: MonthExportLayoutProps) {
           if (stamp) {
             return (
               <div key={iso} className="block aspect-[3/4] w-full">
-                <Stamp stamp={stamp} size="full" showDate showMood />
+                <StampComponent stamp={stamp} size="full" showDate showMood />
               </div>
             );
           }

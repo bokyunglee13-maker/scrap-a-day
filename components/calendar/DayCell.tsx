@@ -103,7 +103,11 @@ export function DayCell({
         <span
           className={cn(
             "mt-0.5 text-center font-sans text-[10px] leading-tight md:text-xs",
-            "text-mood-joy/80",
+            // whitespace-pre-line honors the explicit \n in lib/hooks.ts so the
+            // hint renders on the intended 2-3 lines instead of auto-wrapping
+            // mid-syllable. font-medium + full-opacity mood-joy is the 'a bit
+            // darker' the user asked for without introducing a new color token.
+            "whitespace-pre-line font-medium text-mood-joy",
           )}
         >
           {todayHint}
