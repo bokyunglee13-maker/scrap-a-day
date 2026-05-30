@@ -128,9 +128,9 @@
 
 /* ─────────────────────────────────────────────────────────
    Scrap a Day — project tokens (PRD §02)
-   Mood/stamp colors + font family aliases for next/font.
+   Mood/stamp colors + font family aliases.
    Generates Tailwind classes: bg-mood-joy, text-stamp-ink,
-   font-serif (Crimson Pro), font-handwriting (Caveat), etc.
+   font-sans / font-serif / font-handwriting, etc.
    ───────────────────────────────────────────────────────── */
 @theme {
   --color-mood-joy: #fac775;
@@ -144,11 +144,13 @@
 
   /* Paperlogy is the SOLE font face across the app (user preference, post-Phase 6).
      font-sans / font-serif / font-handwriting all alias to it so that any class
-     in the codebase — including those still tagged with font-serif (e.g. month
-     headers, "이 달의 기록") or font-handwriting (e.g. login hero text, "오늘, 한 장")
-     — renders in Paperlogy with zero per-component changes.
-     Crimson Pro and Caveat are still loaded in layout.tsx for now; removing the
-     imports is a v1.1 polish item (saves ~150-200KB on first paint). */
+     in the codebase — including legacy tags like font-serif on month headers
+     and font-handwriting on login hero text — renders in Paperlogy with no
+     per-component change.
+     PRD §02 previously specified Crimson Pro + Caveat as additional faces;
+     those Google Fonts imports were removed from app/layout.tsx after the
+     unification (PRD §02 is out-of-date on this; superseded by ADR 0006 era
+     decisions and the resulting commits). */
   --font-sans: var(--font-paperlogy), sans-serif;
   --font-serif: var(--font-paperlogy), sans-serif;
   --font-handwriting: var(--font-paperlogy), sans-serif;

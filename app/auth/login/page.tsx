@@ -104,7 +104,7 @@ function LoginInner() {
             비밀번호 입력 없어요.
           </p>
           <label className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-stamp-ink/50">
+            <span className="text-sm font-medium text-stamp-ink/60">
               이메일
             </span>
             <input

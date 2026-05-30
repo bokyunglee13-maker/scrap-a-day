@@ -113,7 +113,7 @@ function AccountInner() {
 
       <section className="mt-6 space-y-4">
         <div className="rounded-md border border-stamp-ink/10 bg-white/40 p-4">
-          <p className="text-xs uppercase tracking-wide text-stamp-ink/50">
+          <p className="text-sm font-medium text-stamp-ink/60">
             이메일
           </p>
           <p className="mt-1 break-all text-base text-stamp-ink">{user.email}</p>
@@ -122,7 +122,7 @@ function AccountInner() {
         <div className="rounded-md border border-stamp-ink/10 bg-white/40 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="text-xs uppercase tracking-wide text-stamp-ink/50">
+              <p className="text-sm font-medium text-stamp-ink/60">
                 동기화
               </p>
               <p className="mt-1 text-sm text-stamp-ink">

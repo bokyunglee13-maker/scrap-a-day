@@ -1,15 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Crimson_Pro, Caveat } from "next/font/google";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorListeners } from "@/components/ErrorListeners";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// Paperlogy — self-hosted Korean sans family. Replaces Noto Sans KR as the
-// primary sans face per user preference. Three weights loaded (Regular/Medium/
-// Bold) to cover the design system's needs while keeping the font payload
-// modest (~4MB total in .ttf — .woff2 would compress further, future polish).
+// Paperlogy — the SOLE font face across the app (user preference, post-Phase 6).
+// Three weights loaded (Regular / Medium / Bold) to cover the design system's
+// needs while keeping the payload modest (~4MB total in .ttf — .woff2 would
+// compress further, future polish).
+//
+// Previously we also loaded Crimson Pro (--font-crimson, was used by
+// font-serif) and Caveat (--font-caveat, was used by font-handwriting). Both
+// are now aliased to Paperlogy in globals.css @theme, so the Google Fonts
+// imports were deadweight on first paint (~150-200KB). Removed.
 const paperlogy = localFont({
   variable: "--font-paperlogy",
   display: "swap",
@@ -18,18 +22,6 @@ const paperlogy = localFont({
     { path: "../public/fonts/paperlogy/Paperlogy-5Medium.ttf", weight: "500", style: "normal" },
     { path: "../public/fonts/paperlogy/Paperlogy-7Bold.ttf", weight: "700", style: "normal" },
   ],
-});
-
-const crimsonPro = Crimson_Pro({
-  variable: "--font-crimson",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -69,7 +61,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${paperlogy.variable} ${crimsonPro.variable} ${caveat.variable} h-full antialiased`}
+      className={`${paperlogy.variable} h-full antialiased`}
     >
       <body
         className="min-h-full flex flex-col font-sans bg-stamp-paper text-stamp-ink"

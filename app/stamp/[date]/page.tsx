@@ -209,7 +209,7 @@ function StampDetailView({ stamp }: { stamp: Stamp }) {
 
         {companions.length > 0 && (
           <div className="flex max-w-prose flex-col items-center gap-2">
-            <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+            <h2 className="text-sm font-medium text-stamp-ink/60">
               함께한 사람
             </h2>
             <ul className="flex flex-wrap justify-center gap-1.5">

@@ -404,14 +404,14 @@ function NewStampInner() {
             </div>
 
             <section className="flex flex-col gap-2">
-              <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
                 스타일
               </h2>
               <StylePicker value={style} onChange={setStyle} />
             </section>
 
             <section className="flex flex-col gap-2">
-              <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
                 감정
               </h2>
               <MoodPicker
@@ -423,14 +423,14 @@ function NewStampInner() {
             </section>
 
             <section className="flex flex-col gap-2">
-              <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
                 함께한 사람
               </h2>
               <CompanionPicker value={companions} onChange={setCompanions} />
             </section>
 
             <section className="flex flex-col gap-2">
-              <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+              <h2 className="text-sm font-medium text-stamp-ink/60">
                 메모
               </h2>
               <MemoInput value={memo} onChange={setMemo} />
