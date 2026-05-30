@@ -17,8 +17,22 @@ import { toast } from "sonner";
 import { Download } from "lucide-react";
 
 import { SearchExportLayout } from "./SearchExportLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Mood, Stamp } from "@/types";
 import type { RangePreset } from "@/lib/dateGuards";
+
+/** Threshold above which we show a 'this will be a long image' confirm
+ *  before kicking off the toPng render. ~60 stamps with the 3-col 720px
+ *  layout produces roughly a 4000-5000px tall PNG (3+ Instagram stories).
+ *  Below 60 we just download silently — the typical 1-3 month search. */
+const CONFIRM_THRESHOLD = 60;
 
 const STAMP_PAPER = "#fbeaf0";
 
@@ -125,10 +139,25 @@ export function ExportSearch({
   const offscreenRef = useRef<HTMLDivElement | null>(null);
   const [rendering, setRendering] = useState(false);
 
-  const isDisabled = disabled || stamps.length === 0 || rendering;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const isDisabled =
+    disabled || stamps.length === 0 || rendering || confirmOpen;
 
   const handleClick = () => {
     if (isDisabled) return;
+    if (stamps.length > CONFIRM_THRESHOLD) {
+      // Surface the heavy-render warning so users aren't surprised by a
+      // 5000px-tall PNG. They can either continue (we proceed) or cancel
+      // and narrow the date range / pick a single month instead.
+      setConfirmOpen(true);
+      return;
+    }
+    setRendering(true);
+  };
+
+  const handleConfirm = () => {
+    setConfirmOpen(false);
     setRendering(true);
   };
 
@@ -212,6 +241,37 @@ export function ExportSearch({
           </div>
         </div>
       )}
+
+      {/* Long-result confirm. Only mounts when needed so it doesn't sit in
+          the DOM for the 99% case (small searches). */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>긴 이미지가 만들어져요</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-stamp-ink/70 leading-relaxed">
+            검색 결과 {stamps.length}개를 한 장의 이미지로 만듭니다.
+            <br />
+            인스타 스토리 여러 장 길이가 될 수 있어요.
+          </p>
+          <p className="text-xs text-stamp-ink/55 leading-relaxed">
+            짧게 받고 싶다면 취소하고 기간을 좁히거나 (예: 최근 1개월) 사람 +
+            감정을 같이 선택해 결과를 줄여보세요.
+          </p>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+            >
+              취소
+            </Button>
+            <Button type="button" onClick={handleConfirm}>
+              계속 받기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
