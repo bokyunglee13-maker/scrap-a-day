@@ -126,6 +126,28 @@
   }
 }
 
+/* react-colorful customization — pastel pointer + slim layout for mobile.
+   The library uses pseudo-element pointers; override via .react-colorful
+   class selectors as documented in its README. */
+.react-colorful {
+  width: 100% !important;
+  height: 240px !important;
+}
+.react-colorful__saturation {
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+.react-colorful__hue {
+  height: 32px;
+  border-radius: 0 0 8px 8px;
+}
+.react-colorful__pointer {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #FBEAF0;
+  box-shadow: 0 0 0 1px rgba(75, 21, 40, 0.4), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
 /* ─────────────────────────────────────────────────────────
    Scrap a Day — project tokens (PRD §02)
    Mood/stamp colors + font family aliases.
@@ -141,6 +163,12 @@
 
   --color-stamp-paper: #fbeaf0;
   --color-stamp-ink: #4b1528;
+
+  /* react-colorful slider handle override — repaints the round 'pointer'
+     on the saturation square and hue bar in our pastel stamp-ink tone so
+     the picker matches the app palette instead of using react-colorful's
+     default white-on-shadow. */
+  --rcl-pointer-color: #4B1528;
 
   /* Paperlogy is the SOLE font face across the app (user preference, post-Phase 6).
      font-sans / font-serif / font-handwriting all alias to it so that any class

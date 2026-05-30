@@ -18,6 +18,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import { ColorPickerDialog } from "@/components/ui/ColorPickerDialog";
 import {
   DEFAULT_BACKGROUND_COLOR,
   getSettings,
@@ -128,6 +129,7 @@ export default function BackgroundSettingsPage() {
   const [textInput, setTextInput] = useState<string>("");
   const [textError, setTextError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,15 +195,14 @@ export default function BackgroundSettingsPage() {
           {/* Compact inline preview (stamp + hex side-by-side). */}
           <Preview color={color} />
 
-          {/* Quick-select presets — 6 colors in a single row (grid-cols-6)
-              so they take only one short row, leaving vertical space for
-              the picker + HEX inputs below. Each cell becomes a small
-              tappable circle with the name tucked underneath. */}
+          {/* Quick-select presets — 3 col × 2 row so they fit cleanly inside
+              any mobile viewport (320px and up). 6-in-a-row turned out to
+              cause horizontal overflow on smaller phones. */}
           <section className="flex flex-col gap-1.5">
             <h2 className="text-xs font-medium text-stamp-ink/60">
               자주 쓰는 색
             </h2>
-            <ul className="grid grid-cols-6 gap-1.5">
+            <ul className="grid grid-cols-3 gap-1.5">
               {PRESETS.map((p) => {
                 const active =
                   color.toUpperCase() === p.value.toUpperCase();
@@ -213,17 +214,17 @@ export default function BackgroundSettingsPage() {
                       aria-pressed={active}
                       aria-label={p.label}
                       className={cn(
-                        "flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "flex h-12 w-full flex-row items-center justify-center gap-1.5 rounded-md border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         active
                           ? "border-stamp-ink shadow-sm"
                           : "border-stamp-ink/15 hover:border-stamp-ink/40",
                       )}
                     >
                       <span
-                        className="size-6 rounded-full border border-stamp-ink/15"
+                        className="size-5 rounded-full border border-stamp-ink/15"
                         style={{ backgroundColor: p.value }}
                       />
-                      <span className="text-[10px] leading-none text-stamp-ink/70">
+                      <span className="text-xs text-stamp-ink/70">
                         {p.label}
                       </span>
                     </button>
@@ -233,24 +234,28 @@ export default function BackgroundSettingsPage() {
             </ul>
           </section>
 
-          {/* Native picker (compact). key+defaultValue trick documented in
-              earlier commit — Samsung Internet ignores controlled value
-              on <input type="color">. */}
+          {/* Custom JS picker (react-colorful) — opens in a dialog so it
+              doesn't lengthen the page. Replaces the native <input
+              type="color">, which on Samsung Internet (a) ignored our
+              starting value and (b) showed system-default UI chrome the
+              user disliked. The dialog wraps a HexColorPicker we can
+              fully theme via CSS overrides in globals.css. */}
           <section className="flex flex-col gap-1.5">
             <h2 className="text-xs font-medium text-stamp-ink/60">
               직접 선택
             </h2>
-            <label className="flex items-center justify-between gap-3 rounded-md border border-stamp-ink/10 bg-white/40 px-3 py-2">
-              <span className="text-sm text-stamp-ink">색상 picker</span>
-              <input
-                key={color}
-                type="color"
-                defaultValue={color}
-                onChange={(e) => void applyColor(e.target.value.toUpperCase())}
-                aria-label="배경 색 picker"
-                className="size-9 cursor-pointer rounded border border-stamp-ink/20 bg-transparent p-0"
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="flex items-center justify-between gap-3 rounded-md border border-stamp-ink/10 bg-white/40 px-3 py-2 hover:bg-stamp-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="text-sm text-stamp-ink">색상 picker 열기</span>
+              <span
+                className="size-7 rounded border border-stamp-ink/20"
+                style={{ backgroundColor: color }}
+                aria-hidden
               />
-            </label>
+            </button>
           </section>
 
           {/* HEX / RGB text input. flex layout keeps input + 적용 button
@@ -296,6 +301,13 @@ export default function BackgroundSettingsPage() {
           </button>
         </div>
       )}
+
+      <ColorPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        value={color}
+        onApply={(next) => void applyColor(next)}
+      />
     </main>
   );
 }
