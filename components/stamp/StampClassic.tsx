@@ -135,7 +135,11 @@ export function StampClassic({
               'font-serif font-medium',
               size === 'sm' && 'text-[10px]',
               size === 'md' && 'text-sm',
-              size === 'full' && 'text-xs',
+              // size='full' is the calendar cell on mobile (~45px wide).
+              // text-xs (12px) overpowered the photo; 9px reads as a small
+              // label without crowding the image. Same shrink applied to
+              // Minimal/Polaroid for cross-style consistency.
+              size === 'full' && 'text-[9px]',
               size === 'lg' && 'text-2xl',
               size === 'xl' && 'text-3xl',
             )}

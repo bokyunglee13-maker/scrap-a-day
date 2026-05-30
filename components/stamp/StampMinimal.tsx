@@ -110,7 +110,10 @@ export function StampMinimal({
             'absolute left-[6%] top-[6%] flex items-center justify-center rounded-[2px] bg-white text-stamp-ink shadow-sm',
             size === 'sm' && 'px-1 py-0 text-[9px]',
             size === 'md' && 'px-1.5 py-0 text-xs',
-            size === 'full' && 'px-1.5 py-0 text-[11px]',
+            // size='full' = calendar cell on mobile (~45px wide). Shrunk
+            // from 11px to match Classic/Polaroid's tighter date chip; the
+            // photo now dominates instead of competing with the label.
+            size === 'full' && 'px-1 py-0 text-[9px]',
             size === 'lg' && 'px-2 py-0.5 text-base',
             size === 'xl' && 'px-2.5 py-1 text-xl',
           )}

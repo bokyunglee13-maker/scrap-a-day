@@ -67,10 +67,13 @@ export function MonthExportLayout({ year, month, stamps }: MonthExportLayoutProp
       className="bg-stamp-paper"
       style={{ width: EXPORT_WIDTH, padding: 40 }}
     >
-      {/* Header — large year+month, dotted divider, signature wordmark.
-          font-serif still tagged but now aliased to Paperlogy globally. */}
+      {/* Header — year+month, dotted divider, signature wordmark.
+          font-serif still tagged but now aliased to Paperlogy globally.
+          Size was 44px; trimmed to 36px after user feedback that it
+          overpowered the grid below (the calendar should be the dominant
+          element, the header is the caption). */}
       <header className="text-center">
-        <h1 className="font-serif text-stamp-ink" style={{ fontSize: 44, lineHeight: 1.1 }}>
+        <h1 className="font-serif text-stamp-ink" style={{ fontSize: 36, lineHeight: 1.1 }}>
           {year}년 {month}월
         </h1>
         <div

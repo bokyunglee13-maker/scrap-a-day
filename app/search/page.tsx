@@ -207,13 +207,17 @@ function SearchInner() {
         </h1>
       </header>
 
-      {/* Date range — affects how many photos are loaded. Default 3 months. */}
+      {/* Date range — affects how many photos are loaded. Default 3 months.
+          Label and Select trigger sized to match the chip buttons below
+          (text-sm = 14px) so the page reads as a unified palette instead
+          of three different scales (was: text-xs label + text-base select
+          + text-sm chips). */}
       <section className="mt-6 flex items-center justify-between gap-3">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+        <h2 className="text-sm font-medium text-stamp-ink/60">
           기간
         </h2>
         <Select value={range} onValueChange={handleRangeChange}>
-          <SelectTrigger className="h-10 min-w-32 text-base">
+          <SelectTrigger className="h-10 min-w-32 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -229,7 +233,7 @@ function SearchInner() {
       {/* Companion filter section. */}
       {knownCompanions && knownCompanions.length > 0 && (
         <section className="mt-6 flex flex-col gap-2">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+          <h2 className="text-sm font-medium text-stamp-ink/60">
             함께한 사람
           </h2>
           <ul className="flex flex-wrap gap-2">
@@ -264,7 +268,7 @@ function SearchInner() {
 
       {/* Mood filter section. */}
       <section className="mt-6 flex flex-col gap-2">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-stamp-ink/50">
+        <h2 className="text-sm font-medium text-stamp-ink/60">
           감정
         </h2>
         <ul className="flex flex-wrap gap-2">
