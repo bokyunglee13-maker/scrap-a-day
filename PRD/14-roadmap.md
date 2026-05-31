@@ -12,25 +12,44 @@
 - ✅ **검색 기능 (감정 + 동반자)** — Phase 5에 추가 완료
 - ✅ **클라우드 동기화 (Supabase + 이메일 매직링크)** — **Phase 6 완료** (ADR 0006). 다른 브라우저에서 같은 데이터 보기 + iOS ITP 위험 해소. 사용자 cross-browser 자동 sync 검증 통과.
 
+### Post-MVP polish 라운드 (2026-05-31 마감)
+
+본인 사용 검증 직전 시각/UX 다듬기:
+- ✅ **특별한 날 스티커 17개** — 라이프(어린이날, 어버이날, 스승의 날, 부처님 오신날, 핼러윈, 크리스마스) + 공휴일(삼일절, 현충일, 광복절, 개천절, 한글날) + 기존 6
+- ✅ **키치 SVG 스타일 통일** — 17개 모두 굵은 outline + 흰 highlight + 통통한 비율
+- ✅ **per-stamp 스티커 토글** — 등록/상세 페이지에서 사진 보면서 결정 (사전 결정 X)
+- ✅ **배경 컬러 자유 선택** — `/settings/background` 프리셋 + react-colorful + HEX/RGB
+- ✅ **검색 통계 카드** — 사람/감정 검색 시 CSS-only 통계 (감정 분포 + 월별 빈도 + co-occur)
+- ✅ **검색 결과 월별 collapse + 다운로드 가드** — 1년치 결과도 부담 없이
+- ✅ **모바일 overflow 일괄 fix** — 가로 스크롤 차단, 다이얼로그 width 강제
+
 ### v1.1 (MVP 1개월 사용 검증 후) — 우선순위 순
 
 **기능 추가**:
 1. JSON 가져오기 (로컬 백업 복원) — 로컬 전용 사용자의 수동 이동용
 2. 월 점프 (특정 년/월로 바로 이동)
-3. 상세 월말 회고 화면 (감정 차트, 요일별 패턴)
+3. 검색 통계 깊이 확장 — `/stats/companion/{name}` 별도 페이지, 차트 라이브러리 도입, 시간대/요일 패턴 (post-MVP 통계 카드 Phase 2)
 4. 다크모드
 5. 메모 텍스트 검색 (현재 검색은 동반자 + 감정만)
+6. 사용자 등록 기념일 — 생일/결혼기념일 (per-user special day)
 
-**Phase 6 후속 폴리시** (audit 발견):
-6. 영구 삭제 → Supabase Storage 사진 정리 (orphan 누적 방지)
-7. Settings 테이블에 `updatedAt` 컬럼 추가 — 정확한 LWW
-8. LWW silent loss 사용자 안내 (또는 ADR 0006 재검토)
-9. PWA 아이콘 PNG fallback (iOS 일부 환경)
-10. sw.js의 GA dead code 정리 (serwist 기본 포함, 미사용)
-11. Paperlogy TTF → woff2 변환 (~30% 압축)
+**배경 컬러 후속**:
+7. 이미지 업로드 배경 — 컬러로 부족하면 사용자 사진 (검증 후 결정)
+8. 계절 자동 변경 (봄/여름/가을/겨울 자동 색)
+
+**Phase 6 후속 폴리시**:
+9. 영구 삭제 → Supabase Storage 사진 정리 (orphan 누적 방지)
+10. Settings 테이블에 `updatedAt` 컬럼 추가 — 정확한 LWW
+11. LWW silent loss 사용자 안내 (또는 ADR 0006 재검토)
+
+**작은 폴리시**:
+12. PWA 아이콘 PNG fallback (iOS 일부 환경)
+13. sw.js의 GA dead code 정리 (serwist 기본 포함, 미사용)
+14. Paperlogy TTF → woff2 변환 (~30% 압축)
+15. Settings.disabledSpecialDays deprecated 필드 정리 (per-stamp 토글로 대체)
 
 **인프라**:
-12. URL 변경 — `scrap-a-day-eosin` → 더 깔끔한 이름 (Vercel rename + Supabase Auth URL 재설정)
+16. URL 변경 — `scrap-a-day-eosin` → 더 깔끔한 이름 (Vercel rename + Supabase Auth URL 재설정)
 
 ### v2.0 (사용 정착 후)
 - 링크 공유 (읽기 전용 페이지)

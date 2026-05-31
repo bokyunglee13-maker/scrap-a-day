@@ -30,6 +30,8 @@ export interface Stamp {
   mood: Mood | null;
   moodVisible: boolean;
   style: StampStyle;
+  companions?: string[];         // Phase 5+: 함께한 사람 free-text tags
+  hideSpecialDaySticker?: boolean; // post-MVP: 이 우표의 특별한 날 스티커 숨김. default undefined = false = 표시
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;        // null이면 활성, 값 있으면 휴지통
@@ -40,6 +42,12 @@ export interface Settings {
   defaultStyle: StampStyle;      // 기본 우표 스타일
   weekStart: 'monday';           // 고정값 (확장 가능)
   lastBackupAt: Date | null;
+  /** @deprecated post-MVP: per-stamp hideSpecialDaySticker로 대체.
+   *  필드는 보존 (기존 데이터). 새 코드 path는 미사용. */
+  disabledSpecialDays?: string[];
+  /** post-MVP: 사용자 선택 앱 배경 색. 기본 '#FBEAF0' (브랜드 핑크).
+   *  body 배경 + 우표 톱니 fill에 적용 (CSS variable --user-bg). */
+  backgroundColor?: string;
 }
 
 // 관측 테이블 (12-observability.md)
@@ -204,3 +212,15 @@ export async function createStamp(data: StampInput): Promise<Result<Stamp>> {
 2. `upgrade` 함수에서 기존 데이터 변환
 3. CLAUDE.md `12. 변경 이력`에 기록
 4. ADR 작성 (`docs/decisions/`)
+
+새 옵셔널 필드는 마이그레이션 없이 추가 가능 (예: `hideSpecialDaySticker`, `backgroundColor`). 기존 row는 `undefined`라서 default 동작 그대로.
+
+---
+
+## post-MVP 추가 (2026-05-31)
+
+| 필드 | 위치 | 용도 |
+|---|---|---|
+| `Stamp.hideSpecialDaySticker?` | per-stamp | 등록/상세 페이지 토글. 특별한 날 우표에서 스티커 숨김 |
+| `Settings.backgroundColor?` | global | `/settings/background`에서 자유 선택. body + 우표 톱니 fill 적용 |
+| `Settings.disabledSpecialDays?` | deprecated | per-day 토글 (제거됨). 데이터 보존만, 코드 미사용 |

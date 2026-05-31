@@ -2,7 +2,7 @@
 
 > **단일 소스 of truth** — 새 컴포넌트를 만들거나 기존 컴포넌트를 손볼 때 가장 먼저 보는 문서.
 > PRD/02-tech-stack.md, PRD/03-stamp-design.md, PRD/15-mobile-first.md를 통합/요약 + UI 패턴 결정을 더한 cheat sheet.
-> 마지막 업데이트: **2026-05-30** (Phase 6 마감 + 폰트 통일 + 라벨 타이포 통일 후)
+> 마지막 업데이트: **2026-05-31** (post-MVP polish 라운드: 특별한 날 17개 + 키치 SVG + 배경 컬러 + 검색 통계)
 
 ---
 
@@ -26,8 +26,26 @@
 
 | 토큰 | hex | 용도 |
 |---|---|---|
-| `--color-stamp-paper` | `#FBEAF0` | 배경 (전체 앱), 우표 paper |
+| `--color-stamp-paper` | `#FBEAF0` | **우표 안쪽 paper** (항상 핑크, 브랜드 anchor) |
 | `--color-stamp-ink` | `#4B1528` | 텍스트 (메인), 클래식 우표 잉크 |
+
+### 1.2.1 배경 컬러 시스템 (post-MVP)
+
+| 토큰 | 용도 |
+|---|---|
+| `Settings.backgroundColor` | 사용자 선택 배경 색 (default `#FBEAF0`) |
+| body backgroundColor | inline style로 `Settings.backgroundColor` 적용 |
+| CSS variable `--user-bg` | 우표 톱니 fill (모든 stamp 컴포넌트가 자동 따라감) |
+
+**원칙**: 배경 + 우표 톱니는 사용자 컬러. 우표 **내부 paper는 항상 흰색** (어떤 배경에서도 사진이 잘 보이도록 = stamp가 액자 역할).
+
+설정 UI (`/settings/background`):
+- 프리셋 6색 quick-select (분홍/베이지/연크림/연하늘/연그레이/연라벤더 — 모두 채도 낮은 큐레이션)
+- react-colorful HSV picker (다이얼로그, 4KB lib)
+- HEX/RGB 텍스트 입력 (#fff, #ffffff, rgb(r,g,b) 모두 accept)
+- "기본 색으로 되돌리기"
+
+적용 영역: body, 우표 톱니 (3종 + EmptyStamp), Export PNG (Month/Search/Stamp 모두).
 
 ### 1.3 opacity 활용 패턴
 
@@ -153,9 +171,34 @@ const SIZE_CLASS: Record<StampSize, string> = {
 | EmptyStamp | minimal (사용자 스타일 무관) |
 | Polaroid | 없음 (직사각형) |
 
-### 3.5 특별한 날 (SpecialDayBadge)
+### 3.5 특별한 날 스티커 (SpecialDayBadge) — 2026-05-31 확장
 
-`lib/specialDays.ts` 기반. 우표 + 빈 우표 모두에 표시 (다가오는 날 인지). `size === 'sm'|'md'|'full'`은 `compact` variant, 나머지는 `full`.
+`lib/specialDays.ts` 기반. 우표 + 빈 우표 모두에 표시 (다가오는 날 인지).
+
+**17개 special day** (라이프 6 + 공휴일 5 + 기존 6):
+
+| 그룹 | 항목 |
+|---|---|
+| 기존 (Phase 1) | 새해, 발렌타인, 화이트데이, 빼빼로, 설날, 추석 |
+| 라이프 (post-MVP) | 어린이날(5/5), 어버이날(5/8), 스승의 날(5/15), 부처님 오신날(음력 4/8), 핼러윈(10/31), 크리스마스(12/25) |
+| 공휴일 (post-MVP) | 삼일절(3/1), 현충일(6/6), 광복절(8/15), 개천절(10/3), 한글날(10/9) |
+
+`SPECIAL_DAY_ORDER`로 stable 표시 순서. 음력은 2026-2030 사전 계산 (`LUNAR_DATES`).
+
+#### 키치 SVG 스타일 가이드 (모든 17개 통일)
+- 굵은 outline (stroke 0.7-1.2, fill의 진한 변종)
+- 단일 채색 (그라데이션 X)
+- 흰색 highlight (윗부분, ellipse, 회전 -25°, opacity 0.4-0.65)
+- 통통하고 둥근 비율
+- `drop-shadow-sm` (종이 위 스티커 느낌)
+- 공휴일은 절제 톤 (단일 스티커, 어두운 색)
+
+#### per-stamp 토글 (post-MVP)
+`Stamp.hideSpecialDaySticker?: boolean`. 등록 페이지 (특별한 날일 때만 표시) + 상세 페이지 액션 그리드에서 토글. 사진+스티커 같이 보면서 결정.
+
+→ 이전 설계 (`Settings.disabledSpecialDays`로 매년 일괄)는 deprecated. 사진과의 조합은 미리 결정 불가.
+
+`size === 'sm'|'md'|'full'`은 `compact` variant (단일 main 스티커), 나머지는 `full` (main + accent).
 
 ---
 
@@ -246,6 +289,48 @@ shadcn `<Dialog>`. 데이터 손실 가능성 있는 모든 작업 (등록 취�
 - 로딩: `toast.loading('첫 동기화 중…', { id: 'first-sync-loading' })` → `toast.dismiss(id)` + `toast.success(...)`
 - 액션: `{ action: { label: '공유하기', onClick: () => ... } }`
 
+### 5.6 다이얼로그 패턴 (shadcn Dialog wrapper)
+
+shadcn Dialog 사용 시 모바일 overflow 회피:
+```tsx
+<DialogContent
+  className="box-border w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] overflow-hidden p-0 sm:max-w-sm"
+>
+  <div className="flex w-full min-w-0 flex-col gap-4 overflow-hidden p-5">
+    {/* DialogHeader/Footer 대신 직접 만든 layout */}
+    <h2>...</h2>
+    {/* contents — 각 자식 w-full min-w-0 */}
+    <div className="flex w-full gap-2">
+      <Button className="flex-1">취소</Button>
+      <Button className="flex-1">적용</Button>
+    </div>
+  </div>
+</DialogContent>
+```
+
+**핵심**:
+- DialogContent는 `p-0`로 default padding 제거 → 자식 wrapper가 직접 padding 적용
+- `w-[calc(100vw-2rem)]`로 모바일 viewport - 32px 강제
+- 모든 자식에 `w-full min-w-0` (flex 자식이 intrinsic content보다 shrink 가능)
+- DialogHeader / DialogFooter는 사용 X (모바일에서 flex-col-reverse 등 의외 동작)
+- 버튼 row는 `<div className="flex w-full gap-2">` + 각 버튼 `className="flex-1"`로 반반 너비
+
+### 5.7 Color picker (react-colorful)
+
+Samsung Internet native `<input type="color">`가 controlled value 무시 + 시스템 chrome 변경 불가 → 4KB JS picker로 우회.
+
+```tsx
+import { HexColorPicker, HexColorInput } from "react-colorful";
+```
+
+`globals.css`에 override:
+```css
+.react-colorful { width: 100% !important; max-width: 100% !important; height: 240px !important; }
+.react-colorful__pointer { width: 22px; height: 22px; border: 3px solid #FBEAF0; box-shadow: ... }
+```
+
+다이얼로그 안에 wrap. draft state로 dialog 안에서만 drag (적용 누를 때만 commit).
+
 ### 5.5 빈 상태
 
 ```tsx
@@ -303,9 +388,15 @@ shadcn `<Dialog>`. 데이터 손실 가능성 있는 모든 작업 (등록 취�
 - **IndexedDB 컴포넌트는 `'use client'` 필수**
 - **`useLiveQuery`는 외부 async 함수 await 시 추적 안 됨** — 페이지 내부에서 인라인 Dexie 읽기 필수 (search page, MonthExportLayout 제외)
 - **`size='full'` 컨테이너에서 `items-center` 금지** — flex column에서 w-full 자식이 0으로 collapse. 기본 `align-items: stretch` 사용
+- **검색 결과 그리드는 size='md' + flex-wrap 사용** — size='full' + grid + aspect-ratio는 Samsung Internet에서 0px collapse
 - **모바일 input `font-size ≥ 16px`** — `text-base`로 충족
+- **모바일 페이지 가로 스크롤 방지** — main에 `overflow-x-hidden w-full max-w-md`, flex 자식에 `min-w-0`
 - **월요일 시작** — `date-fns` `{ weekStartsOn: 1 }`
 - **미래 날짜 등록 X** — 셀 탭 시 "내일을 기다려요" 토스트만
+- **Samsung Internet `<input type="color">`** — controlled value 무시. react-colorful 사용 권장
+- **shadcn DialogFooter는 모바일에서 flex-col-reverse** — 두 버튼 가로 배치 원하면 `<div className="flex gap-2">` + 각 버튼 `flex-1`
+- **모든 export는 Blob URL 사용** — Naver/KakaoTalk in-app browser가 `data:` URL 거부
+- **html-to-image의 cacheBust=true는 blob URL 깨뜨림** — `false`로
 
 ---
 
@@ -320,6 +411,16 @@ shadcn `<Dialog>`. 데이터 손실 가능성 있는 모든 작업 (등록 취�
 | 2026-05-30 | "오늘은 어떤 하루였나요?" + 줄바꿈 + 진한 mood-joy | 자동 wrap이 syllable 단위로 어색했음 |
 | 2026-05-30 | ExportMonth 다운로드 + 공유 분리 | 갤러리 저장 옵션 부재 호소 |
 | 2026-05-30 | ExportMonth MonthExportLayout useLiveQuery 제거 | 비동기 로드 → toPng 빈 셀 버그 |
+| 2026-05-31 | 특별한 날 스티커 6 → 17개 + 키치 SVG 스타일 통일 | 어린이날/부처님 등 빠진 한국 특별한 날, 디자인 톤 통일 요청 |
+| 2026-05-31 | 스티커 on/off: 설정 페이지 (per-day) → 등록/상세 페이지 (per-stamp) | 사진 + 스티커 조합은 사전 결정 불가, 사진 보면서 결정해야 |
+| 2026-05-31 | 카네이션 redesign: 부채꼴 → 5-lobe 둥근 꽃 | 사용자 참고 이미지처럼 실제 카네이션 모양 |
+| 2026-05-31 | 배경 컬러 자유 선택 + react-colorful dialog | 사용자 자유도 ↑, native picker의 OS 제약 우회 |
+| 2026-05-31 | 검색 결과 우표 size='lg' → 'md' (4개 한 줄) | 한 화면에 더 많은 우표, 메인 캘린더와 톤 일치 |
+| 2026-05-31 | 검색 결과 월별 collapse (3개월+ 시 최신만 펼침) | 1년 검색 결과 (~100개) 부담 ↓ |
+| 2026-05-31 | 검색 통계 카드 추가 (CSS만) | 사람/감정 추가 인사이트 (감정 분포, 월별 빈도, co-occur 등) |
+| 2026-05-31 | 사람 chip multi → single-select | mood와 통일, OR 매칭의 혼란 해소 |
+| 2026-05-31 | 모든 export Blob URL 변환 | Naver/카톡 in-app browser data:URL 거부 |
+| 2026-05-31 | 다이얼로그 패턴 정립 (overflow-hidden + min-w-0 + 직접 layout) | shadcn DialogContent default가 자식 width 누수 |
 
 ---
 
